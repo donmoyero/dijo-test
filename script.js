@@ -106,6 +106,63 @@ function resetAdvancedSections() {
     forecastCharts = {};
 }
 
+/* ================= EXECUTIVE SUMMARY ================= */
+
+function renderExecutiveSummary() {
+
+    const container = document.getElementById("financialPositionSummary");
+    const classificationEl = document.getElementById("financialClassification");
+    const commentaryEl = document.getElementById("executiveCommentary");
+
+    if (!container) return;
+
+    const totalRevenue = sum("revenue");
+    const totalProfit = sum("profit");
+    const margin = getMargin();
+    const growth = calculateMonthlyGrowth();
+    const volatility = calculateVolatility();
+
+    container.innerHTML = `
+        <p>Total Revenue: ${formatCurrency(totalRevenue)}</p>
+        <p>Net Profit: ${formatCurrency(totalProfit)}</p>
+        <p>Profit Margin: ${margin.toFixed(2)}%</p>
+        <p>Average Monthly Growth: ${growth.toFixed(2)}%</p>
+        <p>Revenue Volatility: ${volatility.toFixed(2)}%</p>
+    `;
+
+    let status = "Stable Operating Position";
+    if (volatility > 35) status = "Volatility Risk Exposure";
+    else if (margin < 10) status = "Margin Compression Risk";
+    else if (growth > 15) status = "Accelerated Growth Phase";
+
+    classificationEl.innerHTML = status;
+    commentaryEl.innerHTML =
+        "Financial structure evaluated across growth, margin and volatility dynamics.";
+}
+
+/* ================= LIFECYCLE ================= */
+
+function renderLifecycle() {
+
+    const container = document.getElementById("lifecycleClassification");
+    if (!container) return;
+
+    if (businessData.length < 3) {
+        container.innerHTML = "Enter at least 3 months for lifecycle analysis.";
+        return;
+    }
+
+    const volatility = calculateVolatility();
+    const growth = calculateMonthlyGrowth();
+
+    let classification = "Stabilisation Phase";
+    if (volatility > 35) classification = "At-Risk Phase";
+    else if (growth > 10) classification = "Expansion Phase";
+    else if (volatility < 15) classification = "Stable Phase";
+
+    container.innerHTML = `<strong>Lifecycle Classification:</strong> ${classification}`;
+}
+
 /* ================= FORECAST ================= */
 
 function renderForecasts() {
@@ -200,12 +257,69 @@ function renderPerformanceMatrix() {
 
 function renderRiskAssessment() {
 
-    const volatility = calculateVolatility();
-    const margin = getMargin();
+    setText("stabilityRisk", calculateVolatility() > 35 ? "Elevated" : "Low");
+    setText("marginRisk", getMargin() < 8 ? "Elevated" : "Low");
+    setText("liquidityRisk", getMargin() > 5 ? "Stable" : "Constrained");
+}
 
-    setText("stabilityRisk", volatility > 35 ? "Elevated" : "Low");
-    setText("marginRisk", margin < 8 ? "Elevated" : "Low");
-    setText("liquidityRisk", margin > 5 ? "Stable" : "Constrained");
+/* ================= CORE CHARTS ================= */
+
+function renderCoreCharts() {
+
+    const revenueCanvas = document.getElementById("revenueChart");
+    const profitCanvas = document.getElementById("profitChart");
+    const expenseCanvas = document.getElementById("expenseChart");
+    if (!revenueCanvas || !profitCanvas || !expenseCanvas) return;
+
+    revenueChart?.destroy();
+    profitChart?.destroy();
+    expenseChart?.destroy();
+
+    const labels = businessData.map(d => d.date.toISOString().slice(0,7));
+
+    revenueChart = createChart(revenueCanvas,"line",labels,businessData.map(d=>d.revenue),"Revenue");
+    profitChart = createChart(profitCanvas,"line",labels,businessData.map(d=>d.profit),"Profit");
+    expenseChart = createChart(expenseCanvas,"bar",labels,businessData.map(d=>d.expenses),"Expenses");
+}
+
+function createChart(canvas,type,labels,data,label){
+    return new Chart(canvas,{
+        type,
+        data:{ labels, datasets:[{ label, data }] },
+        options:{ responsive:true, maintainAspectRatio:false }
+    });
+}
+
+/* ================= HELPERS ================= */
+
+function setText(id, value){
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = value;
+}
+
+function calculateMonthlyGrowth() {
+    if (businessData.length < 2) return 0;
+    const first = businessData[0].revenue;
+    const last = businessData[businessData.length - 1].revenue;
+    return ((last - first) / first) * 100;
+}
+
+function calculateVolatility(){
+    if (businessData.length < 2) return 0;
+    const revenues = businessData.map(d=>d.revenue);
+    const mean = revenues.reduce((a,b)=>a+b,0)/revenues.length;
+    const variance = revenues.reduce((a,b)=>a+Math.pow(b-mean,2),0)/revenues.length;
+    return (Math.sqrt(variance)/mean)*100;
+}
+
+function getMargin(){
+    const totalRevenue=sum("revenue");
+    const totalProfit=sum("profit");
+    return totalRevenue>0?(totalProfit/totalRevenue)*100:0;
+}
+
+function sum(key){
+    return businessData.reduce((a,b)=>a+(b[key]||0),0);
 }
 
 /* ================= NAVIGATION ================= */
@@ -224,7 +338,7 @@ function showSection(sectionId, event) {
 
     if (event) event.target.classList.add("active");
 
-    // 🔥 Re-render when opening advanced tabs
+    // Re-render when switching to advanced sections
     if (businessData.length >= 3) {
         if (sectionId === "forecast") renderForecasts();
         if (sectionId === "matrix") renderPerformanceMatrix();
@@ -232,9 +346,15 @@ function showSection(sectionId, event) {
     }
 }
 
+function logout() {
+    location.reload();
+}
+
+/* ================= GLOBAL BINDING ================= */
+
 function bindGlobalFunctions(){
     window.addData = addData;
     window.showSection = showSection;
-    window.logout = () => location.reload();
+    window.logout = logout;
     window.setCurrency = setCurrency;
 }
