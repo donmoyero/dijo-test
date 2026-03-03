@@ -33,30 +33,20 @@ body {
 }
 
 /* =========================================================
-   SIDEBAR
+   SIDEBAR (Institutional Neutral)
 ========================================================= */
 .sidebar {
     width: 250px;
     background: #0f172a;
     padding: 36px 24px;
     border-right: 1px solid #1e293b;
-    transition: left 0.3s ease;
-}
-
-.logo-container {
-    text-align: center;
-    margin-bottom: 44px;
-}
-
-.logo-img {
-    max-width: 140px;
-    margin-bottom: 12px;
 }
 
 .logo-text {
     font-size: 18px;
     font-weight: 600;
     letter-spacing: 0.8px;
+    margin-bottom: 44px;
     display: block;
 }
 
@@ -84,24 +74,6 @@ body {
 }
 
 /* =========================================================
-   MOBILE TOGGLE
-========================================================= */
-.mobile-toggle {
-    display: none;
-    position: fixed;
-    top: 18px;
-    left: 18px;
-    z-index: 1001;
-    background: #1e40af;
-    color: white;
-    border: none;
-    padding: 10px 14px;
-    border-radius: 6px;
-    font-size: 18px;
-    cursor: pointer;
-}
-
-/* =========================================================
    MAIN CONTENT
 ========================================================= */
 .main-content {
@@ -110,24 +82,275 @@ body {
 }
 
 /* =========================================================
+   HEADER
+========================================================= */
+.dashboard-header {
+    padding: 52px 6%;
+    border-bottom: 1px solid #1e293b;
+}
+
+.dashboard-header h1 {
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.engine-subtitle {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #94a3b8;
+    letter-spacing: 0.5px;
+}
+
+/* =========================================================
+   CARD SYSTEM
+========================================================= */
+.card {
+    background: #111827;
+    padding: 38px;
+    border-radius: 10px;
+    margin: 44px 6%;
+    border: 1px solid #1f2937;
+    transition: border 0.2s ease, transform 0.2s ease;
+}
+
+.card:hover {
+    border-color: #2b3645;
+}
+
+.card h2 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 28px;
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+    color: #cbd5e1;
+}
+
+.card h3 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 14px;
+    color: #e2e8f0;
+}
+
+/* =========================================================
+   STABILITY ENGINE (Innovation Identity)
+========================================================= */
+.stability-engine-card {
+    border: 1px solid #1e3a8a;
+    background: linear-gradient(
+        180deg,
+        rgba(30,58,138,0.18) 0%,
+        rgba(17,24,39,1) 65%
+    );
+}
+
+.model-description {
+    font-size: 13px;
+    color: #93c5fd;
+    margin-bottom: 24px;
+}
+
+/* Regime Highlight */
+#stabilityRegimeOutput strong {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+}
+
+/* Stability Index Emphasis */
+#stabilityIndexOutput strong {
+    font-size: 24px;
+    font-weight: 700;
+    color: #38bdf8;
+}
+
+/* Interaction Sensitivity */
+#interactionSensitivityOutput {
+    font-size: 15px;
+    font-weight: 600;
+    color: #fbbf24;
+}
+
+/* =========================================================
+   STRUCTURED BLOCKS
+========================================================= */
+.structured-block {
+    margin-top: 30px;
+    padding-top: 24px;
+    border-top: 1px solid #1f2937;
+    font-size: 14px;
+    color: #cbd5e1;
+}
+
+/* Empty modelling state */
+.structured-block span {
+    color: #64748b;
+    font-style: italic;
+}
+
+/* =========================================================
+   INPUT GRID
+========================================================= */
+.grid {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.grid label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #94a3b8;
+    margin-bottom: 6px;
+    display: block;
+}
+
+.grid input,
+.grid select {
+    width: 100%;
+    padding: 13px;
+    border-radius: 6px;
+    border: 1px solid #1f2937;
+    background: #0b1220;
+    color: #f8fafc;
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+
+.grid input:focus,
+.grid select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59,130,246,0.2);
+}
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+.btn-primary {
+    padding: 13px 20px;
+    background: #1e40af;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+}
+
+/* =========================================================
+   EXECUTIVE SUMMARY
+========================================================= */
+#financialPositionSummary p {
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+#financialClassification {
+    font-size: 16px;
+    font-weight: 600;
+    color: #facc15;
+}
+
+#executiveCommentary {
+    font-size: 14px;
+    color: #cbd5e1;
+}
+
+/* =========================================================
+   INSIGHT ENGINE
+========================================================= */
+#insightEngine p {
+    background: #0b1220;
+    padding: 15px 18px;
+    border-radius: 6px;
+    border-left: 4px solid #1e40af;
+    margin-bottom: 12px;
+    font-size: 13px;
+}
+
+/* =========================================================
+   FORECAST
+========================================================= */
+.forecast-block {
+    margin-bottom: 60px;
+}
+
+.forecast-block canvas {
+    height: 300px !important;
+    margin-bottom: 20px;
+}
+
+/* =========================================================
+   PERFORMANCE MATRIX
+========================================================= */
+#businessHealthIndex {
+    font-size: 20px;
+    font-weight: 600;
+    color: #fbbf24;
+}
+
+#matrixInterpretation {
+    font-size: 14px;
+    margin-top: 10px;
+    color: #cbd5e1;
+}
+
+/* =========================================================
+   RISK
+========================================================= */
+#stabilityRisk,
+#marginRisk,
+#liquidityRisk {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* =========================================================
+   CHARTS
+========================================================= */
+.chart-card {
+    margin-bottom: 48px;
+}
+
+.chart-card canvas {
+    height: 320px !important;
+}
+
+.chart-explanation {
+    font-size: 13px;
+    color: #94a3b8;
+    margin-top: 14px;
+    border-top: 1px solid #1f2937;
+    padding-top: 12px;
+}
+
+/* =========================================================
+   FOOTER
+========================================================= */
+.dashboard-footer {
+    text-align: center;
+    padding: 50px;
+    font-size: 12px;
+    color: #64748b;
+}
+
+/* =========================================================
    RESPONSIVE
 ========================================================= */
 @media (max-width: 900px) {
 
     .sidebar {
-        position: fixed;
-        top: 0;
-        left: -260px;
-        height: 100%;
-        z-index: 1000;
-    }
-
-    .sidebar.active-mobile {
-        left: 0;
-    }
-
-    .mobile-toggle {
-        display: block;
+        display: none;
     }
 
     .card {
