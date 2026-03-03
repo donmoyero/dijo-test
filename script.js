@@ -8,7 +8,6 @@ let expenseChart = null;
 
 let forecastCharts = {};
 let performanceBarChart = null;
-let distributionPieChart = null;
 
 /* ================= INIT ================= */
 
@@ -100,8 +99,31 @@ function renderExecutiveSummary() {
 
     if (commentaryEl) {
         commentaryEl.innerHTML =
-            "Financial structure evaluated across revenue variability, margin resilience and growth strength.";
+            "Financial structure evaluated across growth, margin and volatility dynamics.";
     }
+}
+
+/* ================= LIFECYCLE ================= */
+
+function renderLifecycle() {
+
+    const container = document.getElementById("lifecycleClassification");
+    if (!container) return;
+
+    if (businessData.length < 2) {
+        container.innerHTML = "Enter at least 2 months for lifecycle analysis.";
+        return;
+    }
+
+    const volatility = calculateVolatility();
+    const growth = calculateMonthlyGrowth();
+
+    let classification = "Stabilisation Phase";
+    if (volatility > 35) classification = "At-Risk Phase";
+    else if (growth > 10) classification = "Expansion Phase";
+    else if (volatility < 15) classification = "Stable Phase";
+
+    container.innerHTML = `<strong>Lifecycle Classification:</strong> ${classification}`;
 }
 
 /* ================= INSIGHTS ================= */
@@ -115,14 +137,14 @@ function renderInsights() {
     const margin = getMargin();
     const growth = calculateMonthlyGrowth();
 
-    let insight = "Operating structure stable under current financial configuration.";
+    let insight = "Operating structure stable.";
 
     if (volatility > 35)
-        insight = "Revenue volatility elevated — cash flow predictability reduced.";
+        insight = "Revenue volatility elevated — cash flow risk increased.";
     else if (margin < 10)
-        insight = "Margin compression detected — cost optimisation required.";
+        insight = "Margin compression detected.";
     else if (growth > 15)
-        insight = "Accelerated expansion phase detected — maintain discipline.";
+        insight = "Strong expansion phase detected.";
 
     container.innerHTML = insight;
 }
@@ -153,24 +175,24 @@ function renderFinancialStabilityAssessment() {
     let outlook = "";
 
     if (regime === "Structural Fragility") {
-        interpretation = "High volatility interacting with weak margin structure.";
-        focus = "Immediate margin reinforcement required.";
-        outlook = "Elevated instability risk.";
+        interpretation = "High interaction between volatility and weak margin.";
+        focus = "Reinforce margin resilience.";
+        outlook = "Elevated short-term instability.";
     }
     else if (regime === "Financial Stress") {
-        interpretation = "Financial sensitivity to revenue fluctuation detected.";
-        focus = "Improve revenue stability and cost control.";
-        outlook = "Moderate instability exposure.";
+        interpretation = "Revenue sensitivity impacting structural stability.";
+        focus = "Improve revenue stability.";
+        outlook = "Moderate instability.";
     }
     else if (regime === "Controlled Expansion") {
-        interpretation = "Growth supported by adequate margin strength.";
-        focus = "Maintain margin discipline while scaling.";
+        interpretation = "Growth supported by margin strength.";
+        focus = "Maintain margin discipline.";
         outlook = "Positive short-term outlook.";
     }
     else {
-        interpretation = "Low structural sensitivity across drivers.";
-        focus = "Maintain operational stability.";
-        outlook = "Stable short-term environment.";
+        interpretation = "Low structural sensitivity.";
+        focus = "Maintain operational consistency.";
+        outlook = "Stable environment.";
     }
 
     setText("stabilityInterpretation", interpretation);
