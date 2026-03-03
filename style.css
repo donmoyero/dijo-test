@@ -16,7 +16,7 @@ body {
     background: #0b1220;
     color: #e5e7eb;
     min-height: 100vh;
-    line-height: 1.55;
+    line-height: 1.6;
     -webkit-font-smoothing: antialiased;
 }
 
@@ -33,28 +33,28 @@ body {
 }
 
 /* =========================================================
-   SIDEBAR
+   SIDEBAR (Institutional Neutral)
 ========================================================= */
 .sidebar {
-    width: 240px;
+    width: 250px;
     background: #0f172a;
-    padding: 32px 22px;
+    padding: 36px 24px;
     border-right: 1px solid #1e293b;
 }
 
 .logo-text {
-    font-size: 17px;
+    font-size: 18px;
     font-weight: 600;
-    letter-spacing: 0.6px;
-    margin-bottom: 40px;
+    letter-spacing: 0.8px;
+    margin-bottom: 44px;
     display: block;
 }
 
 .sidebar ul { list-style: none; }
 
 .sidebar li {
-    padding: 12px 14px;
-    margin-bottom: 6px;
+    padding: 13px 15px;
+    margin-bottom: 8px;
     border-radius: 6px;
     cursor: pointer;
     font-size: 13px;
@@ -70,6 +70,7 @@ body {
 .sidebar li.active {
     background: #1e40af;
     color: #ffffff;
+    font-weight: 600;
 }
 
 /* =========================================================
@@ -77,28 +78,28 @@ body {
 ========================================================= */
 .main-content {
     flex: 1;
-    padding-bottom: 60px;
+    padding-bottom: 70px;
 }
 
 /* =========================================================
    HEADER
 ========================================================= */
 .dashboard-header {
-    padding: 48px 6%;
+    padding: 52px 6%;
     border-bottom: 1px solid #1e293b;
 }
 
 .dashboard-header h1 {
-    font-size: 24px;
+    font-size: 26px;
     font-weight: 600;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.5px;
 }
 
 .engine-subtitle {
-    margin-top: 8px;
+    margin-top: 10px;
     font-size: 13px;
     color: #94a3b8;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.5px;
 }
 
 /* =========================================================
@@ -106,11 +107,11 @@ body {
 ========================================================= */
 .card {
     background: #111827;
-    padding: 36px;
+    padding: 38px;
     border-radius: 10px;
-    margin: 42px 6%;
+    margin: 44px 6%;
     border: 1px solid #1f2937;
-    transition: border 0.2s ease;
+    transition: border 0.2s ease, transform 0.2s ease;
 }
 
 .card:hover {
@@ -120,8 +121,8 @@ body {
 .card h2 {
     font-size: 15px;
     font-weight: 600;
-    margin-bottom: 26px;
-    letter-spacing: 0.6px;
+    margin-bottom: 28px;
+    letter-spacing: 0.7px;
     text-transform: uppercase;
     color: #cbd5e1;
 }
@@ -134,32 +135,33 @@ body {
 }
 
 /* =========================================================
-   STABILITY ENGINE VISUAL IDENTITY
+   STABILITY ENGINE (Innovation Identity)
 ========================================================= */
 .stability-engine-card {
     border: 1px solid #1e3a8a;
     background: linear-gradient(
         180deg,
-        rgba(30,58,138,0.15) 0%,
-        rgba(17,24,39,1) 60%
+        rgba(30,58,138,0.18) 0%,
+        rgba(17,24,39,1) 65%
     );
 }
 
 .model-description {
     font-size: 13px;
     color: #93c5fd;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
 }
 
-/* Regime highlight */
+/* Regime Highlight */
 #stabilityRegimeOutput strong {
-    font-size: 18px;
-    letter-spacing: 0.3px;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
 }
 
-/* Stability Index emphasis */
+/* Stability Index Emphasis */
 #stabilityIndexOutput strong {
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 700;
     color: #38bdf8;
 }
@@ -176,10 +178,16 @@ body {
 ========================================================= */
 .structured-block {
     margin-top: 30px;
-    padding-top: 22px;
+    padding-top: 24px;
     border-top: 1px solid #1f2937;
     font-size: 14px;
     color: #cbd5e1;
+}
+
+/* Empty modelling state */
+.structured-block span {
+    color: #64748b;
+    font-style: italic;
 }
 
 /* =========================================================
@@ -194,7 +202,7 @@ body {
 .grid label {
     font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: 0.7px;
+    letter-spacing: 0.8px;
     color: #94a3b8;
     margin-bottom: 6px;
     display: block;
@@ -203,7 +211,7 @@ body {
 .grid input,
 .grid select {
     width: 100%;
-    padding: 12px;
+    padding: 13px;
     border-radius: 6px;
     border: 1px solid #1f2937;
     background: #0b1220;
@@ -223,7 +231,7 @@ body {
    BUTTONS
 ========================================================= */
 .btn-primary {
-    padding: 12px 18px;
+    padding: 13px 20px;
     background: #1e40af;
     border: none;
     border-radius: 6px;
@@ -231,18 +239,19 @@ body {
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: all 0.2s ease;
 }
 
 .btn-primary:hover {
     background: #1d4ed8;
+    transform: translateY(-1px);
 }
 
 /* =========================================================
    EXECUTIVE SUMMARY
 ========================================================= */
 #financialPositionSummary p {
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     font-size: 14px;
 }
 
@@ -262,10 +271,10 @@ body {
 ========================================================= */
 #insightEngine p {
     background: #0b1220;
-    padding: 14px 16px;
+    padding: 15px 18px;
     border-radius: 6px;
-    border-left: 3px solid #1e40af;
-    margin-bottom: 10px;
+    border-left: 4px solid #1e40af;
+    margin-bottom: 12px;
     font-size: 13px;
 }
 
@@ -273,26 +282,26 @@ body {
    FORECAST
 ========================================================= */
 .forecast-block {
-    margin-bottom: 50px;
+    margin-bottom: 60px;
 }
 
 .forecast-block canvas {
-    height: 280px !important;
-    margin-bottom: 16px;
+    height: 300px !important;
+    margin-bottom: 20px;
 }
 
 /* =========================================================
    PERFORMANCE MATRIX
 ========================================================= */
 #businessHealthIndex {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 600;
     color: #fbbf24;
 }
 
 #matrixInterpretation {
     font-size: 14px;
-    margin-top: 8px;
+    margin-top: 10px;
     color: #cbd5e1;
 }
 
@@ -302,7 +311,7 @@ body {
 #stabilityRisk,
 #marginRisk,
 #liquidityRisk {
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 600;
 }
 
@@ -310,19 +319,19 @@ body {
    CHARTS
 ========================================================= */
 .chart-card {
-    margin-bottom: 40px;
+    margin-bottom: 48px;
 }
 
 .chart-card canvas {
-    height: 300px !important;
+    height: 320px !important;
 }
 
 .chart-explanation {
-    font-size: 12.5px;
+    font-size: 13px;
     color: #94a3b8;
-    margin-top: 12px;
+    margin-top: 14px;
     border-top: 1px solid #1f2937;
-    padding-top: 10px;
+    padding-top: 12px;
 }
 
 /* =========================================================
@@ -330,7 +339,7 @@ body {
 ========================================================= */
 .dashboard-footer {
     text-align: center;
-    padding: 40px;
+    padding: 50px;
     font-size: 12px;
     color: #64748b;
 }
@@ -346,6 +355,7 @@ body {
 
     .card {
         margin: 30px 20px;
+        padding: 28px;
     }
 
     .dashboard-header {
