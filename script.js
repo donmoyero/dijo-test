@@ -11,7 +11,7 @@ let forecastCharts = {};
 let performanceBarChart = null;
 let distributionPieChart = null;
 
-/* ================= SCENARIO STATE (NEW) ================= */
+/* ================= SCENARIO STATE ================= */
 
 let scenarioActive = false;
 let scenarioRevenueShock = 0;
@@ -189,6 +189,61 @@ function updateAll() {
     }
 }
 
+/* ================= ENHANCED STABILITY ENGINE ================= */
+
+function renderFinancialStabilityAssessment() {
+
+    const activeData = getActiveData();
+
+    const volatility = calculateVolatility(activeData);
+    const growth = calculateMonthlyGrowth(activeData);
+
+    const totalRevenue = activeData.reduce((a,b)=>a+b.revenue,0);
+    const totalProfit = activeData.reduce((a,b)=>a+b.profit,0);
+    const margin = totalRevenue > 0 ? (totalProfit/totalRevenue)*100 : 0;
+
+    // ---- Enhanced Weighted Model ----
+
+    const volatilityPressure = Math.min(volatility * 1.2, 100);
+    const marginResilience = Math.max(Math.min(margin * 2, 100), 0);
+    const growthStability = 100 - Math.min(Math.abs(growth) * 2, 100);
+
+    let regimePenalty = 0;
+
+    if (volatility > 35 && margin < 10) regimePenalty = 20;
+    else if (volatility > 30) regimePenalty = 12;
+    else if (margin < 8) regimePenalty = 10;
+
+    let stabilityIndex =
+        (0.4 * (100 - volatilityPressure)) +
+        (0.35 * marginResilience) +
+        (0.25 * growthStability) -
+        regimePenalty;
+
+    stabilityIndex = Math.max(0, Math.min(100, Math.round(stabilityIndex)));
+
+    let regime = "Structural Stability";
+    if (stabilityIndex < 40) regime = "Structural Fragility";
+    else if (stabilityIndex < 60) regime = "Financial Stress";
+    else if (growth > 15 && margin > 10) regime = "Controlled Expansion";
+
+    setText("stabilityRegimeOutput", `<strong>${regime}</strong>`);
+    setText("interactionSensitivityOutput", volatility.toFixed(2));
+    setText("stabilityIndexOutput", `<strong>${stabilityIndex} / 100</strong>`);
+
+    setText("stabilityInterpretation",
+        "Regime-weighted structural stability calculated using volatility pressure, margin resilience, and growth moderation.");
+
+    setText("stabilityFocus",
+        margin < 10 ? "Strengthen margin structure and cost control."
+        : volatility > 30 ? "Reduce revenue variability."
+        : "Maintain structural discipline and controlled scaling.");
+
+    setText("stabilityOutlook",
+        stabilityIndex < 50 ? "Elevated structural risk under current conditions."
+        : "Stable structural outlook with manageable systemic exposure.");
+}
+
 /* ================= EXECUTIVE SUMMARY ================= */
 
 function renderExecutiveSummary() {
@@ -225,7 +280,7 @@ function renderExecutiveSummary() {
         "Financial structure evaluated across growth, margin and volatility dynamics.";
 }
 
-/* ================= UPDATED HELPERS ================= */
+/* ================= HELPERS ================= */
 
 function calculateMonthlyGrowth(dataOverride){
     const data = dataOverride || businessData;
