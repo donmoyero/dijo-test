@@ -64,8 +64,6 @@ body {
     margin-bottom: 0;
 }
 
-/* ========================================================= */
-
 .sidebar ul { list-style: none; }
 
 .sidebar li {
@@ -90,7 +88,7 @@ body {
 }
 
 /* =========================================================
-   MOBILE TOGGLE BUTTON (NEW)
+   MOBILE TOGGLE BUTTON
 ========================================================= */
 .mobile-toggle {
     display: none;
@@ -219,6 +217,22 @@ body {
 }
 
 /* =========================================================
+   CHART FIX (CRITICAL ADDITION)
+========================================================= */
+
+.chart-card,
+.forecast-block {
+    position: relative;
+    height: 320px;          /* FIX: controls chart growth */
+    margin-bottom: 30px;
+}
+
+canvas {
+    width: 100% !important; /* FIX: prevents stretching */
+    height: 100% !important;
+}
+
+/* =========================================================
    FOOTER
 ========================================================= */
 .dashboard-footer {
@@ -229,7 +243,7 @@ body {
 }
 
 /* =========================================================
-   RESPONSIVE (UPDATED FOR SLIDE SIDEBAR)
+   RESPONSIVE
 ========================================================= */
 @media (max-width: 900px) {
 
@@ -262,5 +276,10 @@ body {
 
     .dashboard-header {
         padding: 30px 20px;
+    }
+
+    .chart-card,
+    .forecast-block {
+        height: 260px; /* slightly smaller on mobile */
     }
 }
