@@ -68,7 +68,7 @@ function loadFromStorage() {
     }
 }
 
-/* ================= SCENARIO ENGINE (NEW) ================= */
+/* ================= SCENARIO ENGINE ================= */
 
 function getActiveData() {
 
@@ -248,4 +248,13 @@ function calculateVolatility(dataOverride){
     const mean = revenues.reduce((a,b)=>a+b,0)/revenues.length;
     const variance = revenues.reduce((a,b)=>a+Math.pow(b-mean,2),0)/revenues.length;
     return (Math.sqrt(variance)/mean)*100;
+}
+
+/* ================= GLOBAL BINDING ================= */
+
+function bindGlobalFunctions(){
+    window.addData = addData;
+    window.setCurrency = setCurrency;
+    window.applyScenario = applyScenario;
+    window.resetScenario = resetScenario;
 }
