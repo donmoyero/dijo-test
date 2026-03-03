@@ -18,6 +18,7 @@
 
 <div id="app" class="app-layout">
 
+<!-- ================= SIDEBAR ================= -->
 <aside class="sidebar">
     <div class="logo-container">
         <span class="logo-text">ImpactGrid</span>
@@ -43,91 +44,62 @@
     </p>
 </header>
 
-<!-- ================= FINANCIAL OVERVIEW ================= -->
+<!-- ================= DASHBOARD ================= -->
 <section id="dashboard" class="page-section active-section">
 
     <!-- Business Profile -->
-    <section class="card elevated">
+    <section class="card">
         <h2>Business Profile & Reporting Context</h2>
-
         <div class="grid">
-
             <div>
                 <label>Business Start Date</label>
                 <input type="date" id="businessStartDate">
             </div>
-
             <div>
                 <label>Current Reporting Date</label>
                 <input type="date" id="reportingDate">
             </div>
-
             <div>
                 <label>Primary Business Type</label>
                 <select id="businessType">
                     <option value="cafe">Café / Hospitality</option>
                     <option value="retail">Retail Store</option>
                     <option value="ecommerce">E-commerce</option>
-                    <option value="consulting">Consulting / Professional Services</option>
+                    <option value="consulting">Consulting</option>
                     <option value="trade">Trade / Contractor</option>
                     <option value="service">Service-Based SME</option>
                     <option value="other">Other</option>
                 </select>
             </div>
-
-            <div>
-                <label>Average Monthly Revenue Range</label>
-                <select id="revenueRange">
-                    <option value="micro">Under £2,000</option>
-                    <option value="small">£2,000 – £20,000</option>
-                    <option value="growing">£20,000 – £100,000</option>
-                    <option value="established">Over £100,000</option>
-                </select>
-            </div>
-
-            <div>
-                <label>Chart Display Mode</label>
-                <select id="displayMode">
-                    <option value="absolute">Absolute (£)</option>
-                    <option value="relative">Relative Growth (%)</option>
-                </select>
-            </div>
-
         </div>
-
         <div id="lifecycleClassification" style="margin-top:20px;"></div>
     </section>
 
     <!-- Monthly Data Input -->
-    <section class="card elevated">
+    <section class="card">
         <h2>Monthly Financial Data Entry</h2>
-
         <div class="grid">
             <div>
                 <label>Reporting Month</label>
                 <input type="month" id="month">
             </div>
-
             <div>
                 <label>Total Revenue (£)</label>
                 <input type="number" id="revenue">
             </div>
-
             <div>
                 <label>Total Expenses (£)</label>
                 <input type="number" id="expenses">
             </div>
-
             <div>
                 <button class="btn-primary" onclick="addData()">Add Data</button>
             </div>
         </div>
     </section>
 
-    <!-- Executive Financial Summary -->
-    <section class="card elevated">
+    <!-- Executive Summary -->
+    <section class="card">
         <h2>Executive Financial Summary</h2>
-
         <div id="financialPositionSummary"></div>
 
         <div class="structured-block">
@@ -141,27 +113,23 @@
         </div>
     </section>
 
-    <!-- ================= VERSION 2 CORE INNOVATION ================= -->
-    <section class="card elevated stability-engine-card">
+    <!-- Stability Engine -->
+    <section class="card stability-engine-card">
         <h2>Financial Stability Behaviour Assessment</h2>
-        <p class="model-description">
-            Regime-dependent interaction modelling of volatility, margin resilience,
-            and growth dynamics across lifecycle stages.
-        </p>
 
         <div class="structured-block">
             <h3>Stability Regime</h3>
-            <div id="stabilityRegimeOutput"></div>
+            <div id="stabilityRegimeOutput">Awaiting sufficient data...</div>
         </div>
 
         <div class="structured-block">
             <h3>Interaction Sensitivity Score</h3>
-            <div id="interactionSensitivityOutput"></div>
+            <div id="interactionSensitivityOutput">—</div>
         </div>
 
         <div class="structured-block">
             <h3>ImpactGrid Stability Index™ (0–100)</h3>
-            <div id="stabilityIndexOutput"></div>
+            <div id="stabilityIndexOutput">—</div>
         </div>
 
         <div class="structured-block">
@@ -178,40 +146,108 @@
             <h3>Short-Term Outlook</h3>
             <div id="stabilityOutlook"></div>
         </div>
-
     </section>
-    <!-- ================= END VERSION 2 ================= -->
 
-    <!-- Business Intelligence Insights -->
-    <section class="card elevated">
+    <!-- Insights -->
+    <section class="card">
         <h2>Business Intelligence Interpretation</h2>
         <div id="insightEngine"></div>
     </section>
 
     <!-- Charts -->
-    <section class="card elevated">
+    <section class="card">
         <h2>Operational Performance Charts</h2>
 
         <div class="chart-card">
             <h3>Revenue Trend</h3>
             <canvas id="revenueChart"></canvas>
-            <div class="chart-explanation" id="revenueExplanation"></div>
         </div>
 
         <div class="chart-card">
             <h3>Profit Trend</h3>
             <canvas id="profitChart"></canvas>
-            <div class="chart-explanation" id="profitExplanation"></div>
         </div>
 
         <div class="chart-card">
             <h3>Expense Trend</h3>
             <canvas id="expenseChart"></canvas>
-            <div class="chart-explanation" id="expenseExplanation"></div>
         </div>
-
     </section>
 
+</section>
+
+<!-- ================= FORECAST PAGE ================= -->
+<section id="forecast" class="page-section">
+    <section class="card">
+        <h2>Forecast Horizons</h2>
+
+        <div class="forecast-block">
+            <h3>6-Month Projection</h3>
+            <canvas id="forecast6m"></canvas>
+        </div>
+
+        <div class="forecast-block">
+            <h3>1-Year Projection</h3>
+            <canvas id="forecast1y"></canvas>
+        </div>
+
+        <div class="forecast-block">
+            <h3>3-Year Projection</h3>
+            <canvas id="forecast3y"></canvas>
+        </div>
+
+        <div class="forecast-block">
+            <h3>5-Year Projection</h3>
+            <canvas id="forecast5y"></canvas>
+        </div>
+    </section>
+</section>
+
+<!-- ================= PERFORMANCE MATRIX ================= -->
+<section id="matrix" class="page-section">
+    <section class="card">
+        <h2>Performance Matrix</h2>
+
+        <div class="chart-card">
+            <canvas id="performanceBarChart"></canvas>
+        </div>
+
+        <div class="chart-card">
+            <canvas id="distributionPieChart"></canvas>
+        </div>
+
+        <div class="structured-block">
+            <h3>Composite Business Health Index</h3>
+            <div id="businessHealthIndex"></div>
+        </div>
+
+        <div class="structured-block">
+            <h3>Structured Interpretation</h3>
+            <div id="matrixInterpretation"></div>
+        </div>
+    </section>
+</section>
+
+<!-- ================= RISK PAGE ================= -->
+<section id="risk" class="page-section">
+    <section class="card">
+        <h2>Operational Risk Assessment</h2>
+
+        <div class="structured-block">
+            <h3>Stability Risk</h3>
+            <div id="stabilityRisk"></div>
+        </div>
+
+        <div class="structured-block">
+            <h3>Margin Risk</h3>
+            <div id="marginRisk"></div>
+        </div>
+
+        <div class="structured-block">
+            <h3>Liquidity Exposure</h3>
+            <div id="liquidityRisk"></div>
+        </div>
+    </section>
 </section>
 
 <footer class="dashboard-footer">
