@@ -44,12 +44,12 @@
     </p>
 </header>
 
-<!-- ================= DASHBOARD ================= -->
 <section id="dashboard" class="page-section active-section">
 
     <!-- Business Profile -->
     <section class="card">
         <h2>Business Profile & Reporting Context</h2>
+
         <div class="grid">
             <div>
                 <label>Business Start Date</label>
@@ -71,7 +71,19 @@
                     <option value="other">Other</option>
                 </select>
             </div>
+
+            <!-- ✅ NEW -->
+            <div>
+                <label>Reporting Currency</label>
+                <select id="currencySelector" onchange="setCurrency(this.value)">
+                    <option value="GBP">GBP (£)</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="NGN">NGN (₦)</option>
+                </select>
+            </div>
         </div>
+
         <div id="lifecycleClassification" style="margin-top:20px;"></div>
     </section>
 
@@ -79,7 +91,6 @@
     <section class="card">
         <h2>Monthly Financial Data Entry</h2>
 
-        <!-- ✅ Bold Structural Rule -->
         <div style="font-weight:600; margin-bottom:18px;">
             Minimum 3 months required to activate advanced structural insights.
         </div>
@@ -90,11 +101,11 @@
                 <input type="month" id="month">
             </div>
             <div>
-                <label>Total Revenue (£)</label>
+                <label>Total Revenue</label>
                 <input type="number" id="revenue" min="0" step="0.01">
             </div>
             <div>
-                <label>Total Expenses (£)</label>
+                <label>Total Expenses</label>
                 <input type="number" id="expenses" min="0" step="0.01">
             </div>
             <div>
@@ -123,7 +134,6 @@
     <section class="card stability-engine-card">
         <h2>Financial Stability Behaviour Assessment</h2>
 
-        <!-- ✅ Professional Activation Info Block -->
         <div class="activation-info" style="margin-bottom:20px; font-size:13px; color:#93c5fd;">
             Add at least 3 months of financial data to activate advanced structural insights.
         </div>
@@ -185,68 +195,6 @@
         </div>
     </section>
 
-</section>
-
-<!-- Forecast / Matrix / Risk remain unchanged -->
-
-<section id="forecast" class="page-section">
-    <section class="card">
-        <h2>Forecast Horizons</h2>
-        <div class="forecast-block">
-            <h3>6-Month Projection</h3>
-            <canvas id="forecast6m"></canvas>
-        </div>
-        <div class="forecast-block">
-            <h3>1-Year Projection</h3>
-            <canvas id="forecast1y"></canvas>
-        </div>
-        <div class="forecast-block">
-            <h3>3-Year Projection</h3>
-            <canvas id="forecast3y"></canvas>
-        </div>
-        <div class="forecast-block">
-            <h3>5-Year Projection</h3>
-            <canvas id="forecast5y"></canvas>
-        </div>
-    </section>
-</section>
-
-<section id="matrix" class="page-section">
-    <section class="card">
-        <h2>Performance Matrix</h2>
-        <div class="chart-card">
-            <canvas id="performanceBarChart"></canvas>
-        </div>
-        <div class="chart-card">
-            <canvas id="distributionPieChart"></canvas>
-        </div>
-        <div class="structured-block">
-            <h3>Composite Business Health Index</h3>
-            <div id="businessHealthIndex"></div>
-        </div>
-        <div class="structured-block">
-            <h3>Structured Interpretation</h3>
-            <div id="matrixInterpretation"></div>
-        </div>
-    </section>
-</section>
-
-<section id="risk" class="page-section">
-    <section class="card">
-        <h2>Operational Risk Assessment</h2>
-        <div class="structured-block">
-            <h3>Stability Risk</h3>
-            <div id="stabilityRisk"></div>
-        </div>
-        <div class="structured-block">
-            <h3>Margin Risk</h3>
-            <div id="marginRisk"></div>
-        </div>
-        <div class="structured-block">
-            <h3>Liquidity Exposure</h3>
-            <div id="liquidityRisk"></div>
-        </div>
-    </section>
 </section>
 
 <footer class="dashboard-footer">
