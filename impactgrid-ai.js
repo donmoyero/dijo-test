@@ -9,20 +9,32 @@ analyze(question,data,currency){
 
 const q = question.toLowerCase();
 
+/* ===== FORECAST ===== */
+
 if(this.isForecastQuestion(q))
 return this.forecastEngine(q,data,currency);
+
+/* ===== RISK ===== */
 
 if(this.isRiskQuestion(q))
 return this.riskEngine(data,currency);
 
+/* ===== PERFORMANCE ===== */
+
 if(this.isPerformanceQuestion(q))
 return this.performanceEngine(data,currency);
+
+/* ===== STRATEGY ===== */
 
 if(this.isStrategyQuestion(q))
 return this.strategyEngine(data,currency);
 
+/* ===== CHARTS ===== */
+
 if(this.isChartQuestion(q))
 return this.chartExplanation(data,currency);
+
+/* ===== DEFAULT ===== */
 
 return this.generalAdvice();
 
@@ -36,7 +48,10 @@ isForecastQuestion(q){
 return q.includes("forecast") ||
        q.includes("projection") ||
        q.includes("future") ||
-       q.includes("year");
+       q.includes("year") ||
+       q === "3" ||
+       q === "5" ||
+       q === "10";
 },
 
 isRiskQuestion(q){
@@ -72,18 +87,27 @@ return q.includes("chart") ||
 forecastEngine(question,data,currency){
 
 if(data.length < 3){
-return "ImpactGrid AI requires at least 3 months of financial data to generate reliable projections.";
+return "ImpactGrid AI requires at least 3 months of financial data before reliable projections can be generated.";
 }
+
+/* detect years */
 
 let years = 3;
 
 if(question.includes("5")) years = 5;
 if(question.includes("10")) years = 10;
 
-/* generate forecast chart */
+/* trigger forecast chart */
+
+try{
 if(typeof generateAIProjection === "function"){
 generateAIProjection(years);
 }
+}catch(e){
+console.warn("Forecast chart engine not loaded yet");
+}
+
+/* growth calculation */
 
 const first = data[0];
 const last = data[data.length-1];
@@ -92,7 +116,7 @@ let months =
 (last.date.getFullYear()-first.date.getFullYear())*12 +
 (last.date.getMonth()-first.date.getMonth());
 
-if(months<=0) months=1;
+if(months <= 0) months = 1;
 
 const cagr = Math.pow(last.revenue/first.revenue,1/months)-1;
 
@@ -101,20 +125,17 @@ const projected = last.revenue*Math.pow(1+cagr,years*12);
 return `
 ImpactGrid AI Projection Analysis
 
-Based on your historical revenue trend your business
-is expanding at approximately ${(cagr*100).toFixed(2)}% monthly.
+Based on historical financial performance, your business revenue has been expanding at approximately ${(cagr*100).toFixed(2)}% per month.
 
-If the current trajectory continues,
-projected revenue after ${years} years may reach:
+If the current trajectory continues, projected revenue after ${years} years could reach:
 
 ${this.formatCurrency(projected,currency)}
 
-Consultant Insight:
+Consultant Insight
 
-Growth appears sustainable if operational costs
-remain controlled and revenue volatility stays stable.
+Growth appears sustainable provided that operational costs remain controlled and revenue volatility stays within stable limits.
 
-A visual forecast has been generated below.
+A visual forecast has been generated below for reference.
 `;
 
 },
@@ -128,7 +149,7 @@ performanceEngine(data,currency){
 const revenue = this.sum(data,"revenue");
 const profit = this.sum(data,"profit");
 
-const margin = revenue>0?(profit/revenue)*100:0;
+const margin = revenue>0 ? (profit/revenue)*100 : 0;
 
 let insight="";
 
@@ -136,31 +157,30 @@ if(margin>20)
 insight="Your business demonstrates strong profitability and efficient operations.";
 
 else if(margin>10)
-insight="Your business shows moderate profitability with room to improve margins.";
+insight="Your company shows moderate profitability with opportunities to optimise margins.";
 
 else
-insight="Profit margins are currently low which suggests cost pressure.";
+insight="Profit margins appear under pressure which suggests operational cost challenges.";
 
 return `
 ImpactGrid AI Performance Review
 
-Total Revenue:
+Total Revenue Recorded
 ${this.formatCurrency(revenue,currency)}
 
-Total Profit:
+Total Profit Generated
 ${this.formatCurrency(profit,currency)}
 
-Average Profit Margin:
+Average Profit Margin
 ${margin.toFixed(2)}%
 
-Consultant Assessment:
+Consultant Assessment
 
 ${insight}
 
-Recommendation:
+Strategic Focus
 
-Focus on cost efficiency and scalable revenue streams
-to strengthen long-term stability.
+Maintaining revenue growth while improving cost discipline will strengthen long-term financial stability.
 `;
 
 },
@@ -174,40 +194,39 @@ riskEngine(data,currency){
 const volatility = this.calculateVolatility(data);
 
 let level="";
-let insight="";
+let explanation="";
 
 if(volatility<15){
 level="Low";
-insight="Revenue patterns appear stable and predictable.";
+explanation="Revenue behaviour appears stable and predictable.";
 }
 
 else if(volatility<30){
 level="Moderate";
-insight="Some revenue fluctuations may impact forecasting stability.";
+explanation="Revenue fluctuations exist but remain manageable.";
 }
 
 else{
 level="Elevated";
-insight="High volatility indicates unstable revenue patterns.";
+explanation="High revenue volatility may increase operational risk.";
 }
 
 return `
 ImpactGrid AI Risk Assessment
 
-Revenue Volatility:
+Revenue Volatility
 ${volatility.toFixed(2)}%
 
-Risk Level:
+Risk Level
 ${level}
 
-Consultant Insight:
+Consultant Insight
 
-${insight}
+${explanation}
 
-Strategic Recommendation:
+Recommendation
 
-Introduce recurring revenue streams and stabilise
-monthly sales cycles where possible.
+Focus on stabilising recurring revenue streams and reducing dependence on unpredictable income sources.
 `;
 
 },
@@ -227,23 +246,22 @@ if(margin<10)
 strategy += "• Review operational expenses and cost structure.\n";
 
 if(volatility>30)
-strategy += "• Stabilise revenue through recurring contracts or subscriptions.\n";
+strategy += "• Introduce more predictable revenue streams.\n";
 
 if(margin>20)
-strategy += "• Consider reinvesting profits into expansion.\n";
+strategy += "• Reinvest profits into growth initiatives.\n";
 
 if(strategy==="")
-strategy="• Continue scaling while maintaining financial stability.";
+strategy="• Continue scaling operations while maintaining financial stability.";
 
 return `
 ImpactGrid AI Strategic Recommendations
 
 ${strategy}
 
-Long-Term Consultant Insight:
+Long-Term Advisory
 
-Sustainable SME growth is achieved by balancing
-profitability, operational efficiency, and revenue stability.
+Sustainable SME growth is achieved through balanced profitability, revenue stability and operational efficiency.
 `;
 
 },
@@ -255,7 +273,7 @@ profitability, operational efficiency, and revenue stability.
 chartExplanation(data,currency){
 
 if(data.length<3)
-return "ImpactGrid AI requires additional data to analyse chart behaviour.";
+return "ImpactGrid AI requires additional financial records to analyse chart behaviour.";
 
 const growth = this.calculateGrowth(data);
 const volatility = this.calculateVolatility(data);
@@ -263,22 +281,19 @@ const volatility = this.calculateVolatility(data);
 return `
 ImpactGrid Chart Analysis
 
-Revenue Growth:
+Revenue Growth
 ${growth.toFixed(2)}%
 
-Revenue Volatility:
+Revenue Volatility
 ${volatility.toFixed(2)}%
 
-Consultant Insight:
+Consultant Insight
 
-These charts illustrate how revenue, expenses,
-and profit evolve over time.
+These charts illustrate how revenue, expenses and profit evolve over time.
 
-Stable upward revenue with controlled expenses
-indicates a healthy operational trajectory.
+Consistent revenue growth combined with controlled expense levels indicates a healthy financial trajectory.
 
-Monitoring volatility alongside margin performance
-helps anticipate potential operational risk.
+Monitoring volatility alongside profit margins helps anticipate operational risks.
 `;
 
 },
@@ -297,28 +312,27 @@ const volatility=this.calculateVolatility(data);
 return `
 Executive Financial Summary
 
-Total Revenue:
+Total Revenue
 ${this.formatCurrency(revenue,currency)}
 
-Total Profit:
+Total Profit
 ${this.formatCurrency(profit,currency)}
 
-Profit Margin:
+Profit Margin
 ${margin.toFixed(2)}%
 
-Revenue Volatility:
+Revenue Volatility
 ${volatility.toFixed(2)}%
 
-Consultant Summary:
+Consultant Summary
 
 The business demonstrates ${
 margin>15 ? "strong profitability" : "moderate profitability"
 } with ${
-volatility<20 ? "stable revenue patterns." : "some revenue volatility."
+volatility<20 ? "stable revenue behaviour." : "noticeable revenue volatility."
 }
 
-Maintaining cost discipline and predictable revenue
-streams will strengthen long-term stability.
+Maintaining predictable income streams and disciplined cost management will strengthen long-term financial stability.
 `;
 
 },
