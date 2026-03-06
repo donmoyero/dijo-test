@@ -24,12 +24,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
 /* ================= CURRENCY ================= */
 
-function setCurrency(currency){
+function setCurrency(currency) {
     currentCurrency = currency;
     updateAll();
 }
 
-function formatCurrency(val){
+function formatCurrency(val) {
     return new Intl.NumberFormat(undefined, {
         style: "currency",
         currency: currentCurrency
