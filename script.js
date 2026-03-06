@@ -101,7 +101,6 @@ function renderRecordsTable(){
     businessData.forEach(record=>{
 
         const row=document.createElement("tr");
-
         const month=record.date.toISOString().slice(0,7);
 
         row.innerHTML=`
@@ -167,26 +166,16 @@ function renderExecutiveSummary(){
         <p>Revenue Volatility: ${volatility.toFixed(2)}%</p>
     `;
 
-    /* ===== Financial Status Classification ===== */
-
     if(classificationEl){
 
         let status="Stable Operating Position";
 
-        if(volatility>35){
-            status="Volatility Risk Exposure";
-        }
-        else if(margin<10){
-            status="Margin Compression Risk";
-        }
-        else if(growth>15){
-            status="Accelerated Growth Phase";
-        }
+        if(volatility>35) status="Volatility Risk Exposure";
+        else if(margin<10) status="Margin Compression Risk";
+        else if(growth>15) status="Accelerated Growth Phase";
 
         classificationEl.innerHTML=status;
     }
-
-    /* ===== Structured Commentary ===== */
 
     if(commentaryEl){
 
@@ -261,199 +250,72 @@ function createChart(id,type,labels,data,label){
     });
 }
 
-/* ================= FORECAST ================= */
+/* ================= AI CHAT ENGINE ================= */
 
-function renderForecasts(){
+function askImpactGridAI(){
 
-    if(businessData.length<3) return;
+    const input=document.getElementById("aiChatInput");
+    const output=document.getElementById("aiChatOutput");
 
-    const first=businessData[0];
-    const last=businessData[businessData.length-1];
+    if(!input||!output) return;
 
-    const monthsDiff=
-        (last.date.getFullYear()-first.date.getFullYear())*12+
-        (last.date.getMonth()-first.date.getMonth());
+    const question=input.value.trim();
 
-    if(monthsDiff<=0||first.revenue<=0) return;
+    if(question==="") return;
 
-    const cagr=Math.pow(last.revenue/first.revenue,1/monthsDiff)-1;
+    const answer=generateAIResponse(question);
 
-    generateProjection("forecast6m",6,cagr);
-    generateProjection("forecast1y",12,cagr);
-    generateProjection("forecast3y",36,cagr);
-    generateProjection("forecast5y",60,cagr);
+    output.innerHTML+=`
+    <div class="ai-user">${question}</div>
+    <div class="ai-response">${answer}</div>
+    `;
+
+    input.value="";
 }
 
-function generateProjection(id,months,cagr){
+/* ================= AI RESPONSE ================= */
 
-    const canvas=document.getElementById(id);
-    if(!canvas) return;
+function generateAIResponse(question){
 
-    forecastCharts[id]?.destroy();
-
-    const last=businessData[businessData.length-1];
-
-    let revenue=last.revenue;
-    let date=new Date(last.date);
-
-    let labels=[];
-    let data=[];
-
-    for(let i=1;i<=months;i++){
-
-        revenue*=(1+cagr);
-        date.setMonth(date.getMonth()+1);
-
-        labels.push(date.toISOString().slice(0,7));
-        data.push(Math.round(revenue));
+    if(businessData.length<3){
+        return "Please enter at least three months of financial data for analysis.";
     }
-
-    forecastCharts[id]=new Chart(canvas,{
-        type:"line",
-        data:{labels,datasets:[{label:"Projected Revenue",data}]},
-        options:{responsive:true,maintainAspectRatio:false}
-    });
-}
-
-/* ================= PERFORMANCE MATRIX ================= */
-
-function renderPerformanceMatrix(){
-
-    if(businessData.length<3) return;
-
-    const volatility=calculateVolatility();
-    const growth=calculateMonthlyGrowth();
-    const margin=getMargin();
-
-    const stabilityScore=Math.max(0,100-volatility);
-    const growthScore=Math.min(Math.abs(growth)*5,100);
-    const profitabilityScore=Math.min(margin*3,100);
-
-    performanceBarChart?.destroy();
-    distributionPieChart?.destroy();
-
-    const barCanvas=document.getElementById("performanceBarChart");
-    const pieCanvas=document.getElementById("distributionPieChart");
-
-    if(barCanvas){
-        performanceBarChart=new Chart(barCanvas,{
-            type:"bar",
-            data:{labels:["Stability","Growth","Profitability"],datasets:[{data:[stabilityScore,growthScore,profitabilityScore]}]},
-            options:{scales:{y:{beginAtZero:true,max:100}}}
-        });
-    }
-
-    if(pieCanvas){
-        distributionPieChart=new Chart(pieCanvas,{
-            type:"doughnut",
-            data:{labels:["Stability","Growth","Profitability"],datasets:[{data:[stabilityScore,growthScore,profitabilityScore]}]}
-        });
-    }
-
-    setText("businessHealthIndex",
-        `Composite Index: ${Math.round((stabilityScore+growthScore+profitabilityScore)/3)} / 100`
-    );
-}
-
-/* ================= RISK ================= */
-
-function renderRiskAssessment(){
-
-    if(businessData.length<3) return;
 
     const volatility=calculateVolatility();
     const margin=getMargin();
     const growth=calculateMonthlyGrowth();
 
-    const stability=volatility>35?"Elevated":"Low";
-    const marginStatus=margin<8?"Elevated":"Low";
-    const liquidity=margin>5?"Stable":"Constrained";
-
-    setText("stabilityRisk",stability);
-    setText("marginRisk",marginStatus);
-    setText("liquidityRisk",liquidity);
-
-    let insight="Operational risk currently appears manageable.";
-
-    if(volatility>35){
-        insight="Revenue volatility indicates fluctuating income patterns.";
-    }
-
-    if(margin<8){
-        insight+=" Profit margins are compressed.";
-    }
-
-    if(growth>12){
-        insight+=" Revenue growth remains strong.";
-    }
-
-    setText("riskInsight", insight);
-}
-
-/* ================= AI ================= */
-
-function renderAIInsights(){
-
-    if(!document.getElementById("aiFinancial")) return;
-    if(businessData.length<3) return;
-
-    const volatility=calculateVolatility();
-    const margin=getMargin();
-    const growth=calculateMonthlyGrowth();
-
-    setText("aiFinancial",
-    `Revenue momentum appears ${growth>10?"expansionary":"stable"} with a margin of ${margin.toFixed(1)}%.`);
-
-    setText("aiOperations",
-    volatility>30
-    ?"Operational revenue volatility detected."
-    :"Operational patterns appear stable.");
-
-    setText("aiForecast",
-    growth>10
-    ?"Forecast suggests expansion if trend persists."
-    :"Forecast suggests moderate continuity.");
-
-    const score=Math.round((Math.max(0,100-volatility)+Math.min(Math.abs(growth)*5,100)+Math.min(margin*3,100))/3);
-
-    setText("aiPerformance",`Business Health Index estimated at ${score}/100.`);
-
-    setText("aiRisk",
-    volatility>35
-    ?"Volatility risk elevated."
-    :"Operational risk currently manageable.");
-}
-
-/* ================= NAVIGATION ================= */
-
-function showSection(sectionId,event){
-
-    document.querySelectorAll(".page-section").forEach(sec =>
-        sec.classList.remove("active-section")
+    const healthScore=Math.round(
+        (Math.max(0,100-volatility)+
+        Math.min(Math.abs(growth)*5,100)+
+        Math.min(margin*3,100))/3
     );
 
-    document.getElementById(sectionId)?.classList.add("active-section");
+    const q=question.toLowerCase();
 
-    document.querySelectorAll(".sidebar li").forEach(li =>
-        li.classList.remove("active")
-    );
+    if(q.includes("health")){
+        return `Your Business Health Index is approximately ${healthScore}/100. This reflects current revenue volatility of ${volatility.toFixed(1)}% and a profit margin of ${margin.toFixed(1)}%. Improving margin efficiency and stabilising revenue would increase this score.`;
+    }
 
-    if(event) event.target.classList.add("active");
+    if(q.includes("risk")){
+        if(volatility>35){
+            return "Revenue volatility is elevated which introduces financial uncertainty. Stabilising income streams should be prioritised.";
+        }
+        return "Operational risk currently appears manageable based on the current financial data.";
+    }
 
-    setTimeout(()=>{
-        if(sectionId==="forecast") renderForecasts();
-        if(sectionId==="matrix") renderPerformanceMatrix();
-        if(sectionId==="risk") renderRiskAssessment();
-        if(sectionId==="ai") renderAIInsights();
-    },100);
+    if(q.includes("profit")){
+        return `Your current profit margin is ${margin.toFixed(1)}%. Increasing operational efficiency or reducing expenses would strengthen profitability.`;
+    }
+
+    if(q.includes("growth")){
+        return `Average monthly revenue growth is ${growth.toFixed(1)}%. Sustained growth above 10% indicates expansion potential if profitability remains stable.`;
+    }
+
+    return "ImpactGrid AI analyses revenue growth, volatility, margins and operational risk to evaluate business stability. Ask about profit, risk, growth or health score.";
 }
 
 /* ================= HELPERS ================= */
-
-function setText(id,value){
-    const el=document.getElementById(id);
-    if(el) el.innerHTML=value;
-}
 
 function calculateMonthlyGrowth(){
     if(businessData.length<2) return 0;
@@ -507,4 +369,5 @@ function bindGlobalFunctions(){
     window.showSection=showSection;
     window.logout=logout;
     window.setCurrency=setCurrency;
+    window.askImpactGridAI=askImpactGridAI;
 }
