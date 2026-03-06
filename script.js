@@ -11,11 +11,13 @@ let forecastCharts = {};
 let performanceBarChart = null;
 let distributionPieChart = null;
 
+
 /* ================= INIT ================= */
 
 document.addEventListener("DOMContentLoaded", () => {
     bindGlobalFunctions();
 });
+
 
 /* ================= CURRENCY ================= */
 
@@ -30,6 +32,7 @@ function formatCurrency(val){
         currency:currentCurrency
     }).format(val);
 }
+
 
 /* ================= ADD DATA ================= */
 
@@ -62,6 +65,7 @@ function addData(){
     updateAll();
 }
 
+
 /* ================= MASTER UPDATE ================= */
 
 function updateAll(){
@@ -71,12 +75,10 @@ function updateAll(){
     renderRecordsTable();
     updateProgressIndicator();
     renderExecutiveSummary();
-    renderLifecycle();
     renderCoreCharts();
 
     if(businessData.length>=3){
 
-        renderInsights();
         renderForecasts();
         renderPerformanceMatrix();
         renderRiskAssessment();
@@ -89,11 +91,13 @@ function updateAll(){
     }
 }
 
+
 /* ================= RESET ================= */
 
 function resetAdvancedSections(){
 
     setText("businessHealthIndex","Enter at least 3 months of financial data.");
+
     setText("stabilityRisk","Awaiting data...");
     setText("marginRisk","");
     setText("liquidityRisk","");
@@ -105,7 +109,15 @@ function resetAdvancedSections(){
     setText("aiPerformance","");
     setText("aiRisk","");
 
+    performanceBarChart?.destroy();
+    distributionPieChart?.destroy();
+
+    Object.keys(forecastCharts).forEach(key=>{
+        forecastCharts[key]?.destroy();
+        delete forecastCharts[key];
+    });
 }
+
 
 /* ================= RECORD TABLE ================= */
 
@@ -133,6 +145,7 @@ function renderRecordsTable(){
     });
 }
 
+
 /* ================= DATA PROGRESS ================= */
 
 function updateProgressIndicator(){
@@ -146,74 +159,134 @@ function updateProgressIndicator(){
 
         const remaining=3-count;
 
-        progress.innerHTML=`
-        ${count} / 3 months entered<br>
-        Enter ${remaining} more month${remaining>1?"s":""} to activate ImpactGrid Insights.
-        `;
+        progress.innerHTML=
+        `${count} / 3 months entered<br>
+        Enter ${remaining} more month${remaining>1?"s":""} to activate ImpactGrid Insights.`
 
     }else{
 
-        progress.innerHTML=`
-        ${count} months recorded<br>
-        <strong>ImpactGrid Insights Activated</strong>
-        `;
+        progress.innerHTML=
+        `${count} months recorded<br>
+        <strong>ImpactGrid Insights Activated</strong>`
+
     }
 }
+
 
 /* ================= EXECUTIVE SUMMARY ================= */
 
 function renderExecutiveSummary(){
 
     const container=document.getElementById("financialPositionSummary");
-    const classificationEl=document.getElementById("financialClassification");
-    const commentaryEl=document.getElementById("executiveCommentary");
-
     if(!container) return;
 
     const totalRevenue=sum("revenue");
     const totalProfit=sum("profit");
+
     const margin=getMargin();
     const growth=calculateMonthlyGrowth();
     const volatility=calculateVolatility();
 
     container.innerHTML=`
-        <p>Total Revenue: ${formatCurrency(totalRevenue)}</p>
-        <p>Net Profit: ${formatCurrency(totalProfit)}</p>
-        <p>Profit Margin: ${margin.toFixed(2)}%</p>
-        <p>Average Monthly Growth: ${growth.toFixed(2)}%</p>
-        <p>Revenue Volatility: ${volatility.toFixed(2)}%</p>
+    <p>Total Revenue: ${formatCurrency(totalRevenue)}</p>
+    <p>Net Profit: ${formatCurrency(totalProfit)}</p>
+    <p>Profit Margin: ${margin.toFixed(2)}%</p>
+    <p>Average Monthly Growth: ${growth.toFixed(2)}%</p>
+    <p>Revenue Volatility: ${volatility.toFixed(2)}%</p>
     `;
-
-    if(classificationEl){
-
-        let status="Stable Operating Position";
-
-        if(volatility>35) status="Volatility Risk Exposure";
-        else if(margin<10) status="Margin Compression Risk";
-        else if(growth>15) status="Accelerated Growth Phase";
-
-        classificationEl.innerHTML=status;
-    }
-
-    if(commentaryEl){
-
-        let commentary="Financial structure evaluated across growth, margin and volatility dynamics.";
-
-        if(volatility>35){
-            commentary="Revenue volatility suggests fluctuating income patterns.";
-        }
-
-        if(margin<10){
-            commentary+=" Profit margins appear compressed indicating operational cost pressure.";
-        }
-
-        if(growth>12){
-            commentary+=" Revenue growth indicates expansion dynamics.";
-        }
-
-        commentaryEl.innerHTML=commentary;
-    }
 }
+
+
+/* ================= CORE CHARTS ================= */
+
+function renderCoreCharts(){
+
+    const canvas=document.getElementById("revenueChart");
+    if(!canvas) return;
+
+    revenueChart?.destroy();
+    profitChart?.destroy();
+    expenseChart?.destroy();
+
+    const labels=businessData.map(d=>d.date.toISOString().slice(0,7));
+
+    revenueChart=createChart("revenueChart","line",labels,businessData.map(d=>d.revenue),"Revenue");
+    profitChart=createChart("profitChart","line",labels,businessData.map(d=>d.profit),"Profit");
+    expenseChart=createChart("expenseChart","bar",labels,businessData.map(d=>d.expenses),"Expenses");
+
+}
+
+function createChart(id,type,labels,data,label){
+
+    const canvas=document.getElementById(id);
+    if(!canvas) return null;
+
+    return new Chart(canvas,{
+        type,
+        data:{labels,datasets:[{label,data}]},
+        options:{responsive:true,maintainAspectRatio:false}
+    });
+
+}
+
+
+/* ================= FORECAST ================= */
+
+function renderForecasts(){
+
+    if(businessData.length<3) return;
+
+    const first=businessData[0];
+    const last=businessData[businessData.length-1];
+
+    const monthsDiff=
+        (last.date.getFullYear()-first.date.getFullYear())*12+
+        (last.date.getMonth()-first.date.getMonth());
+
+    if(monthsDiff<=0||first.revenue<=0) return;
+
+    const cagr=Math.pow(last.revenue/first.revenue,1/monthsDiff)-1;
+
+    generateProjection("forecast6m",6,cagr);
+    generateProjection("forecast1y",12,cagr);
+    generateProjection("forecast3y",36,cagr);
+    generateProjection("forecast5y",60,cagr);
+
+}
+
+function generateProjection(id,months,cagr){
+
+    const canvas=document.getElementById(id);
+    if(!canvas) return;
+
+    forecastCharts[id]?.destroy();
+
+    const last=businessData[businessData.length-1];
+
+    let revenue=last.revenue;
+    let date=new Date(last.date);
+
+    let labels=[];
+    let data=[];
+
+    for(let i=1;i<=months;i++){
+
+        revenue*=(1+cagr);
+        date.setMonth(date.getMonth()+1);
+
+        labels.push(date.toISOString().slice(0,7));
+        data.push(Math.round(revenue));
+
+    }
+
+    forecastCharts[id]=new Chart(canvas,{
+        type:"line",
+        data:{labels,datasets:[{label:"Projected Revenue",data}]},
+        options:{responsive:true,maintainAspectRatio:false}
+    });
+
+}
+
 
 /* ================= PERFORMANCE MATRIX ================= */
 
@@ -239,19 +312,23 @@ function renderPerformanceMatrix(){
 
     performanceBarChart=new Chart(bar,{
         type:"bar",
-        data:{labels:["Stability","Growth","Profitability"],datasets:[{data:[stabilityScore,growthScore,profitabilityScore]}]},
+        data:{
+            labels:["Stability","Growth","Profitability"],
+            datasets:[{data:[stabilityScore,growthScore,profitabilityScore]}]
+        },
         options:{scales:{y:{beginAtZero:true,max:100}}}
     });
 
     distributionPieChart=new Chart(pie,{
         type:"doughnut",
-        data:{labels:["Stability","Growth","Profitability"],datasets:[{data:[stabilityScore,growthScore,profitabilityScore]}]}
+        data:{
+            labels:["Stability","Growth","Profitability"],
+            datasets:[{data:[stabilityScore,growthScore,profitabilityScore]}]
+        }
     });
 
-    setText("businessHealthIndex",
-        `Composite Index: ${Math.round((stabilityScore+growthScore+profitabilityScore)/3)} / 100`
-    );
 }
+
 
 /* ================= RISK ================= */
 
@@ -261,65 +338,46 @@ function renderRiskAssessment(){
 
     const volatility=calculateVolatility();
     const margin=getMargin();
-    const growth=calculateMonthlyGrowth();
 
-    const stability = volatility>35?"Elevated":"Low";
-    const marginStatus = margin<8?"Elevated":"Low";
-    const liquidity = margin>5?"Stable":"Constrained";
+    setText("stabilityRisk",volatility>35?"Elevated":"Low");
+    setText("marginRisk",margin<8?"Elevated":"Low");
+    setText("liquidityRisk",margin>5?"Stable":"Constrained");
 
-    setText("stabilityRisk",stability);
-    setText("marginRisk",marginStatus);
-    setText("liquidityRisk",liquidity);
-
-    let insight="Operational risk currently appears manageable.";
-
-    if(volatility>35){
-        insight="Revenue volatility indicates fluctuating income patterns.";
-    }
-
-    if(margin<8){
-        insight+=" Profit margins are compressed.";
-    }
-
-    if(growth>12){
-        insight+=" Revenue growth remains strong.";
-    }
-
-    setText("riskInsight", insight);
 }
 
-/* ================= AI ================= */
 
-function renderAIInsights(){
+/* ================= AI CHAT ================= */
 
-    if(businessData.length<3) return;
+function askImpactGridAI(){
 
-    const volatility=calculateVolatility();
-    const margin=getMargin();
-    const growth=calculateMonthlyGrowth();
+    const input=document.getElementById("aiChatInput");
+    const output=document.getElementById("aiChatOutput");
 
-    setText("aiFinancial",
-    `Revenue momentum appears ${growth>10?"expansionary":"stable"} with a margin of ${margin.toFixed(1)}%.`);
+    if(!input||!output) return;
 
-    setText("aiOperations",
-    volatility>30
-    ?"Operational revenue volatility detected."
-    :"Operational patterns appear stable.");
+    const question=input.value.trim();
+    if(question==="") return;
 
-    setText("aiForecast",
-    growth>10
-    ?"Forecast suggests expansion if trend persists."
-    :"Forecast suggests moderate continuity.");
+    let answer="ImpactGrid AI requires at least 3 months of financial data.";
 
-    const score=Math.round((Math.max(0,100-volatility)+Math.min(Math.abs(growth)*5,100)+Math.min(margin*3,100))/3);
+    if(businessData.length>=3){
 
-    setText("aiPerformance",`Business Health Index estimated at ${score}/100.`);
+        const margin=getMargin().toFixed(1);
+        const growth=calculateMonthlyGrowth().toFixed(1);
 
-    setText("aiRisk",
-    volatility>35
-    ?"Volatility risk elevated."
-    :"Operational risk currently manageable.");
+        answer=`Your business shows ${growth}% growth with a ${margin}% margin. Operational stability appears moderate based on current financial inputs.`;
+
+    }
+
+    output.innerHTML+=`
+    <div class="ai-user">${question}</div>
+    <div class="ai-response">${answer}</div>
+    `;
+
+    input.value="";
+
 }
+
 
 /* ================= HELPERS ================= */
 
@@ -341,9 +399,11 @@ function calculateVolatility(){
 
     const revenues=businessData.map(d=>d.revenue);
     const mean=revenues.reduce((a,b)=>a+b,0)/revenues.length;
+
     const variance=revenues.reduce((a,b)=>a+Math.pow(b-mean,2),0)/revenues.length;
 
     return (Math.sqrt(variance)/mean)*100;
+
 }
 
 function getMargin(){
@@ -352,11 +412,13 @@ function getMargin(){
     const totalProfit=sum("profit");
 
     return totalRevenue>0?(totalProfit/totalRevenue)*100:0;
+
 }
 
 function sum(key){
     return businessData.reduce((a,b)=>a+(b[key]||0),0);
 }
+
 
 /* ================= NAVIGATION ================= */
 
@@ -374,16 +436,8 @@ function showSection(sectionId,event){
 
     if(event) event.target.classList.add("active");
 
-    setTimeout(()=>{
-
-        if(sectionId==="charts") renderCoreCharts();
-        if(sectionId==="forecast") renderForecasts();
-        if(sectionId==="matrix") renderPerformanceMatrix();
-        if(sectionId==="risk") renderRiskAssessment();
-        if(sectionId==="ai") renderAIInsights();
-
-    },100);
 }
+
 
 /* ================= LOGOUT ================= */
 
@@ -398,7 +452,9 @@ async function logout(){
     }
 
     window.location.href="login.html";
+
 }
+
 
 /* ================= GLOBAL BINDING ================= */
 
@@ -407,4 +463,5 @@ function bindGlobalFunctions(){
     window.showSection=showSection;
     window.logout=logout;
     window.setCurrency=setCurrency;
+    window.askImpactGridAI=askImpactGridAI;
 }
