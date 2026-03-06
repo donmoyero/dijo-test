@@ -89,6 +89,31 @@ function updateAll(){
     }
 }
 
+/* ================= RESET ADVANCED ================= */
+
+function resetAdvancedSections(){
+
+    setText("businessHealthIndex","Awaiting analysis...");
+    setText("stabilityRisk","Awaiting data...");
+    setText("marginRisk","");
+    setText("liquidityRisk","");
+    setText("riskInsight","");
+
+    setText("aiFinancial","");
+    setText("aiOperations","");
+    setText("aiForecast","");
+    setText("aiPerformance","");
+    setText("aiRisk","");
+
+    performanceBarChart?.destroy();
+    distributionPieChart?.destroy();
+
+    Object.keys(forecastCharts).forEach(key=>{
+        forecastCharts[key]?.destroy();
+        delete forecastCharts[key];
+    });
+}
+
 /* ================= RECORD TABLE ================= */
 
 function renderRecordsTable(){
@@ -225,8 +250,6 @@ function renderLifecycle(){
 
 function renderCoreCharts(){
 
-    if(!document.getElementById("revenueChart")) return;
-
     revenueChart?.destroy();
     profitChart?.destroy();
     expenseChart?.destroy();
@@ -250,72 +273,39 @@ function createChart(id,type,labels,data,label){
     });
 }
 
-/* ================= AI CHAT ENGINE ================= */
+/* ================= NAVIGATION ================= */
 
-function askImpactGridAI(){
+function showSection(sectionId,event){
 
-    const input=document.getElementById("aiChatInput");
-    const output=document.getElementById("aiChatOutput");
-
-    if(!input||!output) return;
-
-    const question=input.value.trim();
-
-    if(question==="") return;
-
-    const answer=generateAIResponse(question);
-
-    output.innerHTML+=`
-    <div class="ai-user">${question}</div>
-    <div class="ai-response">${answer}</div>
-    `;
-
-    input.value="";
-}
-
-/* ================= AI RESPONSE ================= */
-
-function generateAIResponse(question){
-
-    if(businessData.length<3){
-        return "Please enter at least three months of financial data for analysis.";
-    }
-
-    const volatility=calculateVolatility();
-    const margin=getMargin();
-    const growth=calculateMonthlyGrowth();
-
-    const healthScore=Math.round(
-        (Math.max(0,100-volatility)+
-        Math.min(Math.abs(growth)*5,100)+
-        Math.min(margin*3,100))/3
+    document.querySelectorAll(".page-section").forEach(sec =>
+        sec.classList.remove("active-section")
     );
 
-    const q=question.toLowerCase();
+    document.getElementById(sectionId)?.classList.add("active-section");
 
-    if(q.includes("health")){
-        return `Your Business Health Index is approximately ${healthScore}/100. This reflects current revenue volatility of ${volatility.toFixed(1)}% and a profit margin of ${margin.toFixed(1)}%. Improving margin efficiency and stabilising revenue would increase this score.`;
-    }
+    document.querySelectorAll(".sidebar li").forEach(li =>
+        li.classList.remove("active")
+    );
 
-    if(q.includes("risk")){
-        if(volatility>35){
-            return "Revenue volatility is elevated which introduces financial uncertainty. Stabilising income streams should be prioritised.";
-        }
-        return "Operational risk currently appears manageable based on the current financial data.";
-    }
+    if(event) event.target.classList.add("active");
 
-    if(q.includes("profit")){
-        return `Your current profit margin is ${margin.toFixed(1)}%. Increasing operational efficiency or reducing expenses would strengthen profitability.`;
-    }
+    setTimeout(()=>{
 
-    if(q.includes("growth")){
-        return `Average monthly revenue growth is ${growth.toFixed(1)}%. Sustained growth above 10% indicates expansion potential if profitability remains stable.`;
-    }
+        if(sectionId==="charts") renderCoreCharts();
+        if(sectionId==="forecast") renderForecasts();
+        if(sectionId==="matrix") renderPerformanceMatrix();
+        if(sectionId==="risk") renderRiskAssessment();
+        if(sectionId==="ai") renderAIInsights();
 
-    return "ImpactGrid AI analyses revenue growth, volatility, margins and operational risk to evaluate business stability. Ask about profit, risk, growth or health score.";
+    },100);
 }
 
 /* ================= HELPERS ================= */
+
+function setText(id,value){
+    const el=document.getElementById(id);
+    if(el) el.innerHTML=value;
+}
 
 function calculateMonthlyGrowth(){
     if(businessData.length<2) return 0;
