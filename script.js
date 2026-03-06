@@ -10,6 +10,7 @@ let expenseChart=null;
 let forecastCharts={};
 let performanceBarChart=null;
 let distributionPieChart=null;
+let aiForecastChart=null;
 
 
 /* ================= INIT ================= */
