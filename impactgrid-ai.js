@@ -1,992 +1,604 @@
-/* =====================================================================
-   IMPACTGRID AI ENGINE — FINANCIAL ADVISER v3.0
-   No API required. Thinks like a real financial adviser.
-
-   What makes this different from v2:
-   ✅ Deep financial analysis using real ratios & benchmarks
-   ✅ Understands follow-up questions using conversation memory
-   ✅ Industry-specific benchmarks (café, retail, consulting etc.)
-   ✅ Trend analysis — detects acceleration, deceleration, plateaus
-   ✅ Seasonal pattern detection across months
-   ✅ Cash flow health scoring (burn rate, runway)
-   ✅ Expense ratio analysis — flags cost creep
-   ✅ Break-even analysis
-   ✅ Month-by-month commentary — knows which month was best/worst
-   ✅ Specific, numbered, actionable advice — not generic text
-   ✅ Confident adviser tone — no hedging, no vague answers
-===================================================================== */
-
-var ImpactGridAI = {
-
-  /* ===================================================================
-     MAIN ENTRY — async wrapper kept for script.js compatibility
-  =================================================================== */
-
-  analyze: async function(question, data, currency, history) {
-    history = history || [];
-    // Simulate a brief thinking pause for UX realism
-    await new Promise(function(r) { setTimeout(r, 420); });
-    return ImpactGridAI.adviser(question, data, currency, history);
-  },
-
-
-  /* ===================================================================
-     CORE ADVISER BRAIN
-     Routes every question to the right analysis module
-  =================================================================== */
-
-  adviser: function(question, data, currency, history) {
-    var q = question.toLowerCase().trim();
-
-    if (!data || data.length === 0) return ImpactGridAI.noData();
-
-    // Build full financial picture once — used by all modules
-    var fin = ImpactGridAI.buildFinancials(data, currency);
-
-    // Intent routing — order matters (most specific first)
-    if (ImpactGridAI.is(q, ["break even","breakeven","break-even"]))
-      return ImpactGridAI.breakEvenAnalysis(fin, currency);
-
-    if (ImpactGridAI.is(q, ["burn","runway","cash","cashflow","cash flow","how long"]))
-      return ImpactGridAI.cashFlowAnalysis(fin, currency);
-
-    if (ImpactGridAI.is(q, ["expense","cost","spending","overheads","overhead","outgoing"]))
-      return ImpactGridAI.expenseAnalysis(fin, currency);
-
-    if (ImpactGridAI.is(q, ["best month","worst month","best period","highest","lowest","peak","which month"]))
-      return ImpactGridAI.bestWorstAnalysis(fin, currency);
-
-    if (ImpactGridAI.is(q, ["season","seasonal","pattern","time of year","quarter"]))
-      return ImpactGridAI.seasonalAnalysis(fin, currency);
-
-    if (ImpactGridAI.is(q, ["anomal","unusual","spike","drop","outlier","strange","weird","different"]))
-      return ImpactGridAI.anomalyAnalysis(fin, currency);
-
-    if (ImpactGridAI.is(q, ["forecast","project","future","predict","next year","in 5","in 3","in 10","years time","year projection","year forecast"]) || /^\d+$/.test(q))
-      return ImpactGridAI.forecastAnalysis(q, fin, currency);
-
-    if (ImpactGridAI.is(q, ["risk","stable","stability","volatil","danger","safe","uncertain","consistent","reliable"]))
-      return ImpactGridAI.riskAnalysis(fin, currency);
-
-    if (ImpactGridAI.is(q, ["benchmark","industry","compare","average","typical","standard","sector"]))
-      return ImpactGridAI.benchmarkAnalysis(fin, currency);
-
-    if (ImpactGridAI.is(q, ["margin","profit margin","net margin","gross"]))
-      return ImpactGridAI.marginAnalysis(fin, currency);
-
-    if (ImpactGridAI.is(q, ["grow","growth","increase revenue","scale","expand","more customers","more sales"]))
-      return ImpactGridAI.growthStrategy(fin, currency);
-
-    if (ImpactGridAI.is(q, ["cut","reduce","save","saving","cheaper","lower cost","trim","slash"]))
-      return ImpactGridAI.costReduction(fin, currency);
-
-    if (ImpactGridAI.is(q, ["performance","health","how am i doing","how are we doing","summary","overview","status","results","report"]))
-      return ImpactGridAI.performanceSummary(fin, currency);
-
-    if (ImpactGridAI.is(q, ["strategy","strategic","advice","advise","recommend","should i","what should","help me","plan","next step","what do i do"]))
-      return ImpactGridAI.strategicAdvice(fin, currency);
-
-    if (ImpactGridAI.is(q, ["chart","graph","visual","explain","what does","tell me about","breakdown","analyse","analyze"]))
-      return ImpactGridAI.chartNarrative(fin, currency);
-
-    if (ImpactGridAI.is(q, ["invest","reinvest","spend","hire","staff","marketing","advertising"]))
-      return ImpactGridAI.investmentAdvice(fin, currency);
-
-    if (ImpactGridAI.is(q, ["trend","direction","trajectory","momentum","accelerat","decelerat","slowing","speeding"]))
-      return ImpactGridAI.trendAnalysis(fin, currency);
-
-    if (ImpactGridAI.is(q, ["what","why","how","when","where","tell me","explain","describe"]))
-      return ImpactGridAI.openQuestion(q, fin, currency, history);
-
-    // Catch-all — still give useful output
-    return ImpactGridAI.performanceSummary(fin, currency);
-  },
-
-
-  /* ===================================================================
-     FINANCIAL MODEL BUILDER
-     Computes every metric once, used across all modules
-  =================================================================== */
-
-  buildFinancials: function(data, currency) {
-    var totalRev  = ImpactGridAI.sum(data, "revenue");
-    var totalExp  = ImpactGridAI.sum(data, "expenses");
-    var totalProf = ImpactGridAI.sum(data, "profit");
-    var n         = data.length;
-
-    var avgRev    = totalRev  / n;
-    var avgExp    = totalExp  / n;
-    var avgProf   = totalProf / n;
-
-    var margin    = totalRev > 0 ? (totalProf / totalRev) * 100 : 0;
-    var expRatio  = totalRev > 0 ? (totalExp  / totalRev) * 100 : 0;
-
-    // Month-by-month growth rates
-    var growthRates = [];
-    for (var i = 1; i < n; i++) {
-      if (data[i-1].revenue > 0)
-        growthRates.push((data[i].revenue - data[i-1].revenue) / data[i-1].revenue * 100);
-    }
-
-    var avgGrowth = growthRates.length > 0
-      ? growthRates.reduce(function(a,b){return a+b;},0) / growthRates.length : 0;
-
-    // Trend acceleration: is growth speeding up or slowing down?
-    var trendAccel = 0;
-    if (growthRates.length >= 4) {
-      var half = Math.floor(growthRates.length / 2);
-      var earlyAvg = growthRates.slice(0, half).reduce(function(a,b){return a+b;},0)/half;
-      var lateAvg  = growthRates.slice(-half).reduce(function(a,b){return a+b;},0)/half;
-      trendAccel   = lateAvg - earlyAvg;
-    }
-
-    // Volatility (coefficient of variation)
-    var revs   = data.map(function(d){return d.revenue;});
-    var mean   = totalRev / n;
-    var stdDev = Math.sqrt(revs.reduce(function(a,b){return a+Math.pow(b-mean,2);},0)/n);
-    var volatility = mean > 0 ? (stdDev / mean) * 100 : 0;
-
-    // Overall growth first to last
-    var overallGrowth = data[0].revenue > 0
-      ? (data[n-1].revenue - data[0].revenue) / data[0].revenue * 100 : 0;
-
-    // Best and worst months
-    var bestMonth  = data.reduce(function(a,b){return b.revenue > a.revenue ? b : a;});
-    var worstMonth = data.reduce(function(a,b){return b.revenue < a.revenue ? b : a;});
-    var bestProfit = data.reduce(function(a,b){return b.profit > a.profit ? b : a;});
-    var worstProfit= data.reduce(function(a,b){return b.profit < a.profit ? b : a;});
-
-    // Expense creep: is expense ratio rising over time?
-    var expCreep = 0;
-    if (n >= 4) {
-      var earlyExpRatio = data.slice(0, Math.floor(n/2)).reduce(function(s,d){return s + (d.expenses/d.revenue);},0) / Math.floor(n/2) * 100;
-      var lateExpRatio  = data.slice(-Math.floor(n/2)).reduce(function(s,d){return s + (d.expenses/d.revenue);},0) / Math.floor(n/2) * 100;
-      expCreep = lateExpRatio - earlyExpRatio;
-    }
-
-    // Anomalies
-    var anomalies = ImpactGridAI.detectAnomalies(data);
-
-    // Consecutive growth/decline streaks
-    var currentStreak = 0;
-    var streakType = "flat";
-    if (n >= 2) {
-      currentStreak = 1;
-      streakType = data[n-1].revenue > data[n-2].revenue ? "growth" : "decline";
-      for (var j = n-2; j > 0; j--) {
-        if (streakType === "growth" && data[j].revenue > data[j-1].revenue) currentStreak++;
-        else if (streakType === "decline" && data[j].revenue < data[j-1].revenue) currentStreak++;
-        else break;
-      }
-    }
-
-    // Break-even point (monthly fixed cost approximation)
-    var fixedCostEst = avgExp * 0.6; // rough: ~60% of expenses are fixed
-    var varCostRatio = (avgExp * 0.4) / (avgRev || 1);
-    var breakEven    = varCostRatio < 1 ? fixedCostEst / (1 - varCostRatio) : 0;
-
-    // Profitability trend
-    var profMargins = data.map(function(d){ return d.revenue > 0 ? d.profit/d.revenue*100 : 0; });
-    var marginTrend = profMargins.length >= 3
-      ? profMargins[profMargins.length-1] - profMargins[0] : 0;
-
-    return {
-      data: data,
-      n: n,
-      totalRev: totalRev,
-      totalExp: totalExp,
-      totalProf: totalProf,
-      avgRev: avgRev,
-      avgExp: avgExp,
-      avgProf: avgProf,
-      margin: margin,
-      expRatio: expRatio,
-      avgGrowth: avgGrowth,
-      overallGrowth: overallGrowth,
-      growthRates: growthRates,
-      trendAccel: trendAccel,
-      volatility: volatility,
-      stdDev: stdDev,
-      bestMonth: bestMonth,
-      worstMonth: worstMonth,
-      bestProfit: bestProfit,
-      worstProfit: worstProfit,
-      expCreep: expCreep,
-      anomalies: anomalies,
-      currentStreak: currentStreak,
-      streakType: streakType,
-      breakEven: breakEven,
-      profMargins: profMargins,
-      marginTrend: marginTrend,
-      currency: currency
-    };
-  },
-
-
-  /* ===================================================================
-     1. PERFORMANCE SUMMARY — full adviser briefing
-  =================================================================== */
-
-  performanceSummary: function(fin, currency) {
-    var f  = ImpactGridAI.fc;
-    var c  = currency;
-
-    var healthScore = ImpactGridAI.calcHealthScore(fin);
-    var healthLabel = healthScore >= 70 ? "Strong" : healthScore >= 45 ? "Moderate" : "Under Pressure";
-    var healthColor = healthScore >= 70 ? "#2dd4a0" : healthScore >= 45 ? "#c8a96e" : "#ff4d6d";
-
-    var trendWord = fin.avgGrowth > 3 ? "growing strongly"
-      : fin.avgGrowth > 0 ? "growing steadily"
-      : fin.avgGrowth > -3 ? "flat"
-      : "declining";
-
-    var marginVerdict = fin.margin > 20 ? "excellent — well above the SME average of 10–15%"
-      : fin.margin > 15 ? "good — above the typical SME benchmark"
-      : fin.margin > 10 ? "acceptable — in line with the SME average"
-      : fin.margin > 5  ? "below average — there is room to improve"
-      : "low — this needs immediate attention";
-
-    var streakNote = fin.currentStreak >= 2
-      ? " You are currently on a <strong>" + fin.currentStreak + "-month " + fin.streakType + " streak</strong>."
-      : "";
-
-    var expNote = fin.expCreep > 5
-      ? "<br><br><strong style='color:#f5a623;'>⚠ Cost Creep Detected:</strong> Your expense ratio has risen by <strong>" + fin.expCreep.toFixed(1) + " percentage points</strong> in recent months. Costs are growing faster than revenue — this needs addressing before it erodes your margin further."
-      : fin.expCreep < -3
-        ? "<br><br><strong style='color:#2dd4a0;'>✓ Cost Efficiency Improving:</strong> Your expense ratio has improved by <strong>" + Math.abs(fin.expCreep).toFixed(1) + " percentage points</strong> recently — good cost discipline."
-        : "";
-
-    var anomalyNote = fin.anomalies.length > 0
-      ? "<br><br><strong style='color:#f5a623;'>⚠ Anomalies:</strong> " + fin.anomalies.map(function(a){ return a.date.toISOString().slice(0,7); }).join(", ") + " showed unusual revenue — worth investigating."
-      : "";
-
-    return ImpactGridAI.card("Financial Performance Summary",
-      "<div style='display:inline-block;padding:6px 14px;background:" + healthColor + "22;border:1px solid " + healthColor + "44;border-radius:20px;font-size:12px;color:" + healthColor + ";font-weight:700;margin-bottom:14px;'>Business Health: " + healthLabel + " (" + healthScore + "/100)</div>" +
-
-      "<p>Over <strong>" + fin.n + " months</strong>, your business has generated <strong>" + f(fin.totalRev, c) + "</strong> in total revenue with a net profit of <strong>" + f(fin.totalProf, c) + "</strong>. Revenue is " + trendWord + " at an average of <strong>" + fin.avgGrowth.toFixed(1) + "% per month</strong>." + streakNote + "</p>" +
-
-      "<p>Your profit margin of <strong>" + fin.margin.toFixed(1) + "%</strong> is " + marginVerdict + ". Monthly revenue averages <strong>" + f(fin.avgRev, c) + "</strong> against average expenses of <strong>" + f(fin.avgExp, c) + "</strong>.</p>" +
-
-      expNote + anomalyNote,
-
-      ["How can I improve my margin?", "What are my biggest risks?", "3 year forecast"]
-    );
-  },
-
-
-  /* ===================================================================
-     2. MARGIN ANALYSIS — deep dive into profitability
-  =================================================================== */
-
-  marginAnalysis: function(fin, currency) {
-    var f = ImpactGridAI.fc;
-
-    var best  = Math.max.apply(null, fin.profMargins);
-    var worst = Math.min.apply(null, fin.profMargins);
-    var trend = fin.marginTrend > 2 ? "improving" : fin.marginTrend < -2 ? "deteriorating" : "stable";
-
-    var advice = [];
-    if (fin.margin < 10) {
-      advice.push("Your margin of <strong>" + fin.margin.toFixed(1) + "%</strong> is below the SME benchmark of 10–15%. Every " + f(1000, fin.currency).replace(/[\d,]/g,"") + "1,000 in revenue only keeps <strong>" + f(fin.avgRev * fin.margin/100, fin.currency) + "</strong> as profit.");
-      advice.push("Prioritise either raising prices by 5–10% or cutting the highest fixed-cost line items. A 5 percentage point margin improvement on your current revenue would add <strong>" + f(fin.totalRev * 0.05, fin.currency) + "</strong> to annual profit.");
-    } else if (fin.margin < 20) {
-      advice.push("Your margin of <strong>" + fin.margin.toFixed(1) + "%</strong> is in line with SME averages. The opportunity is to push above 20% — this is the threshold where reinvestment and resilience become much easier.");
-      advice.push("A 5% margin improvement would add approximately <strong>" + f(fin.totalRev * 0.05 / fin.n * 12, fin.currency) + "</strong> to your annualised profit.");
-    } else {
-      advice.push("Your margin of <strong>" + fin.margin.toFixed(1) + "%</strong> is strong — above the 20% threshold that marks a financially resilient SME. You have room to reinvest without jeopardising stability.");
-    }
-
-    if (fin.expRatio > 85) advice.push("Your expense ratio is <strong>" + fin.expRatio.toFixed(1) + "%</strong> — meaning <strong>" + fin.expRatio.toFixed(0) + "p in every £1 of revenue</strong> goes straight back out. The target for a healthy SME is below 80%.");
-
-    return ImpactGridAI.card("Profit Margin Analysis",
-      "<p>Profit Margin: <strong>" + fin.margin.toFixed(2) + "%</strong> &nbsp;·&nbsp; Trend: <strong>" + trend + "</strong></p>" +
-      "<p>Best margin month: <strong>" + best.toFixed(1) + "%</strong> &nbsp;·&nbsp; Worst: <strong>" + worst.toFixed(1) + "%</strong></p>" +
-      "<p>" + advice.join("</p><p>") + "</p>",
-      ["How do I cut costs?", "What's my break-even?", "How can I grow revenue?"]
-    );
-  },
-
-
-  /* ===================================================================
-     3. RISK ANALYSIS — volatility, stability, threat scoring
-  =================================================================== */
-
-  riskAnalysis: function(fin, currency) {
-    var f = ImpactGridAI.fc;
-
-    var volLevel = fin.volatility < 15 ? "Low" : fin.volatility < 30 ? "Moderate" : fin.volatility < 50 ? "Elevated" : "High";
-    var volColor = fin.volatility < 15 ? "#2dd4a0" : fin.volatility < 30 ? "#c8a96e" : "#ff4d6d";
-
-    var risks = [];
-    var mitigations = [];
-
-    if (fin.volatility > 30) {
-      risks.push("Revenue swings by an average of <strong>±" + fin.stdDev.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,",") + "</strong> month to month — this level of volatility makes cash flow planning difficult and increases the risk of a bad month causing real damage.");
-      mitigations.push("Introduce <strong>retainer or subscription-based revenue</strong> to create a predictable income floor. Even covering 30% of monthly costs with recurring income significantly reduces operational risk.");
-    }
-
-    if (fin.margin < 8) {
-      risks.push("A margin below 8% means a single bad month — a large unexpected expense, a slow sales period — could push you into loss. You have very little buffer.");
-      mitigations.push("Build a <strong>cash reserve equivalent to 2–3 months of expenses</strong> (" + f(fin.avgExp * 2.5, currency) + "). This is your financial safety net before addressing margin improvement.");
-    }
-
-    if (fin.expCreep > 5) {
-      risks.push("Costs have been rising faster than revenue over recent months (expense ratio up <strong>" + fin.expCreep.toFixed(1) + " points</strong>). If unchecked, this will compress margins further regardless of revenue growth.");
-      mitigations.push("<strong>Audit your three largest expense categories</strong> immediately. Cost creep is almost always concentrated in 2–3 areas rather than spread evenly.");
-    }
-
-    if (fin.overallGrowth < 0) {
-      risks.push("Revenue has declined by <strong>" + Math.abs(fin.overallGrowth).toFixed(1) + "%</strong> from your first to most recent month. A sustained downward trend is the most serious risk signal on this dashboard.");
-      mitigations.push("Diagnose the decline before addressing it — is it seasonal, pricing-related, or demand-driven? Each requires a different response.");
-    }
-
-    if (risks.length === 0) {
-      risks.push("No critical risk signals detected. Revenue volatility is low, margins are healthy, and cost structure is stable.");
-      mitigations.push("Your primary risk is complacency — maintain monthly financial reviews and build a 3-month expense reserve if you haven't already.");
-    }
-
-    return ImpactGridAI.card("Risk Assessment",
-      "<p>Revenue Volatility: <strong style='color:" + volColor + ";'>" + fin.volatility.toFixed(1) + "% — " + volLevel + "</strong></p>" +
-      "<p><strong>Risk Factors:</strong></p><p>" + risks.join("</p><p>") + "</p>" +
-      "<p><strong>Recommended Mitigations:</strong></p><p>" + mitigations.map(function(m){return "→ " + m;}).join("</p><p>") + "</p>",
-      ["How do I reduce volatility?", "What's my break-even?", "How can I improve my margin?"]
-    );
-  },
-
-
-  /* ===================================================================
-     4. FORECAST ANALYSIS — multi-year with confidence bands
-  =================================================================== */
-
-  forecastAnalysis: function(question, fin, currency) {
-    var f = ImpactGridAI.fc;
-    var years = 3;
-    if (/10/.test(question)) years = 10;
-    else if (/5/.test(question)) years = 5;
-    else if (/1/.test(question) && !/10/.test(question)) years = 1;
-
-    if (fin.n < 3) return ImpactGridAI.card("Forecast",
-      "<p>I need at least 3 months of data to generate a meaningful forecast. Add more records to activate this analysis.</p>",
-      ["Add data first", "How does forecasting work?"]
-    );
-
-    // Use avg monthly growth for projection
-    var monthlyGrowth = fin.avgGrowth / 100;
-    var lastRev = fin.data[fin.n-1].revenue;
-
-    var projected    = lastRev * Math.pow(1 + monthlyGrowth, years * 12);
-    var optimistic   = projected * 1.20;
-    var conservative = projected * 0.80;
-
-    // Annualised run rate
-    var annualRunRate = fin.avgRev * 12;
-
-    // Payback on growth investment
-    var growthInvestNote = fin.margin > 15
-      ? "With your current margins, reinvesting <strong>" + f(fin.avgRev * 0.1, currency) + "/month</strong> (10% of average revenue) into growth activities is financially viable without threatening stability."
-      : "Given margin pressure, any growth investment should be <strong>performance-based</strong> (commission, pay-per-result) rather than fixed cost.";
-
-    // Trigger the chart
-    try { if (typeof generateAIProjection === "function") generateAIProjection(years); } catch(e) {}
-
-    var caution = fin.volatility > 30
-      ? "<br><br><strong style='color:#f5a623;'>⚠ Forecast Caution:</strong> Your revenue volatility of <strong>" + fin.volatility.toFixed(1) + "%</strong> is high. These projections assume current trends continue — actual results could vary significantly. Reducing volatility first will make forecasts more reliable."
-      : "";
-
-    return ImpactGridAI.card(years + "-Year Revenue Forecast",
-      "<p>Based on your average monthly growth rate of <strong>" + fin.avgGrowth.toFixed(2) + "%</strong>, here are your projected revenue outcomes after <strong>" + years + " years</strong>:</p>" +
-
-      "<div style='display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0;'>" +
-        ImpactGridAI.forecastTile("Conservative", f(conservative, currency), "#ff4d6d") +
-        ImpactGridAI.forecastTile("Base Case",    f(projected, currency),    "#c8a96e") +
-        ImpactGridAI.forecastTile("Optimistic",   f(optimistic, currency),   "#2dd4a0") +
-      "</div>" +
-
-      "<p>Your current annualised revenue run rate is <strong>" + f(annualRunRate, currency) + "</strong>.</p>" +
-      "<p>" + growthInvestNote + "</p>" +
-      caution,
-
-      ["How do I hit the optimistic target?", "What risks could derail this?", "How can I grow faster?"]
-    );
-  },
-
-
-  /* ===================================================================
-     5. STRATEGIC ADVICE — specific, prioritised, numbered
-  =================================================================== */
-
-  strategicAdvice: function(fin, currency) {
-    var f = ImpactGridAI.fc;
-    var actions = [];
-
-    // Priority 1: Stop the bleeding if declining
-    if (fin.overallGrowth < -10) {
-      actions.push({
-        priority: "URGENT",
-        color: "#ff4d6d",
-        title: "Diagnose and halt revenue decline",
-        detail: "Revenue has fallen <strong>" + Math.abs(fin.overallGrowth).toFixed(1) + "%</strong> over your tracked period. Before any growth initiative, understand <em>why</em> — pricing, lost customers, reduced demand, or seasonality. This diagnosis changes everything else."
-      });
-    }
-
-    // Priority 2: Margin improvement if low
-    if (fin.margin < 12) {
-      var potentialGain = fin.totalRev * (0.12 - fin.margin/100);
-      actions.push({
-        priority: "HIGH",
-        color: "#f5a623",
-        title: "Improve profit margin to 12%+",
-        detail: "Moving from <strong>" + fin.margin.toFixed(1) + "%</strong> to 12% margin would deliver an additional <strong>" + f(potentialGain / fin.n * 12, currency) + "</strong> in annualised profit at your current revenue level. Target your two highest expense categories first."
-      });
-    }
-
-    // Priority 3: Address cost creep
-    if (fin.expCreep > 4) {
-      actions.push({
-        priority: "HIGH",
-        color: "#f5a623",
-        title: "Reverse expense ratio creep",
-        detail: "Your cost-to-revenue ratio has risen by <strong>" + fin.expCreep.toFixed(1) + " percentage points</strong> recently. Audit subscriptions, supplier contracts, and staffing costs — these are the most common sources of unnoticed cost creep in SMEs."
-      });
-    }
-
-    // Priority 4: Revenue growth strategy
-    if (fin.avgGrowth < 2 && fin.margin >= 10) {
-      actions.push({
-        priority: "MEDIUM",
-        color: "#c8a96e",
-        title: "Accelerate revenue growth",
-        detail: "Growth of <strong>" + fin.avgGrowth.toFixed(1) + "%/month</strong> is below the 3–5% monthly target for a scaling SME. With your margins healthy, the priority is acquiring more customers. Double down on whatever channel drove your best month (" + fin.bestMonth.date.toISOString().slice(0,7) + " at " + f(fin.bestMonth.revenue, currency) + ")."
-      });
-    }
-
-    // Priority 5: Capitalise on strong performance
-    if (fin.margin > 20 && fin.avgGrowth > 3) {
-      actions.push({
-        priority: "OPPORTUNITY",
-        color: "#2dd4a0",
-        title: "Scale from a position of strength",
-        detail: "Strong margins and solid growth create an ideal reinvestment window. Consider allocating <strong>" + f(fin.avgProf * 0.3, currency) + "/month</strong> (30% of average profit) to structured growth: marketing, equipment, or an additional revenue stream."
-      });
-    }
-
-    // Priority 6: Build reserve
-    if (fin.margin < 20) {
-      actions.push({
-        priority: "MEDIUM",
-        color: "#c8a96e",
-        title: "Build a 3-month expense reserve",
-        detail: "Target: <strong>" + f(fin.avgExp * 3, currency) + "</strong>. This is non-negotiable for SME resilience. It prevents a bad quarter from forcing emergency decisions that damage the business long-term."
-      });
-    }
-
-    if (actions.length === 0) {
-      actions.push({
-        priority: "MAINTAIN",
-        color: "#2dd4a0",
-        title: "Protect what's working",
-        detail: "Your business is performing well across all key metrics. The strategic focus should be maintaining financial discipline, building reserves, and identifying the next growth lever without overextending."
-      });
-    }
-
-    var html = "<p>Based on your current financial data, here are your <strong>" + actions.length + " strategic priorities</strong> in order of importance:</p>";
-    actions.forEach(function(a, i) {
-      html += "<div style='margin:10px 0;padding:12px 14px;background:#0a0d18;border:1px solid #1a2035;border-left:3px solid " + a.color + ";border-radius:8px;'>" +
-        "<div style='font-size:10px;font-family:monospace;color:" + a.color + ";letter-spacing:0.1em;margin-bottom:4px;'>" + (i+1) + " · " + a.priority + "</div>" +
-        "<div style='font-weight:700;color:#edf0f7;margin-bottom:6px;'>" + a.title + "</div>" +
-        "<div style='font-size:13px;color:#7a8ba8;line-height:1.65;'>" + a.detail + "</div>" +
-      "</div>";
-    });
-
-    return ImpactGridAI.card("Strategic Priorities", html,
-      ["How do I improve margins?", "What's my 3-year forecast?", "How do I reduce risk?"]
-    );
-  },
-
-
-  /* ===================================================================
-     6. GROWTH STRATEGY
-  =================================================================== */
-
-  growthStrategy: function(fin, currency) {
-    var f = ImpactGridAI.fc;
-
-    var revenueGap3pct = (fin.avgRev * 1.03) - fin.avgRev;
-    var revenueGap5pct = (fin.avgRev * 1.05) - fin.avgRev;
-
-    var readiness = fin.margin > 15 ? "well-positioned" : fin.margin > 8 ? "cautiously positioned" : "not yet ready";
-    var readinessNote = fin.margin > 15
-      ? "Your margins are healthy enough to absorb growth investment costs without putting the business at risk."
-      : fin.margin > 8
-        ? "Growth is viable but should be low-cost and performance-based — avoid large fixed commitments until margins improve."
-        : "Focus on improving margins before investing in growth. Scaling a low-margin business amplifies problems, not profits.";
-
-    return ImpactGridAI.card("Growth Strategy",
-      "<p>You are <strong>" + readiness + "</strong> for growth. " + readinessNote + "</p>" +
-
-      "<p>To grow revenue by <strong>3% per month</strong>, you need an additional <strong>" + f(revenueGap3pct, currency) + "/month</strong>. At 5% growth, that rises to <strong>" + f(revenueGap5pct, currency) + "/month</strong>.</p>" +
-
-      "<p><strong>The three highest-leverage growth actions for an SME:</strong></p>" +
-      "<p>→ <strong>Increase average transaction value</strong> — upselling, bundles, or tiered pricing. This is the fastest route to more revenue with no additional customer acquisition cost.</p>" +
-      "<p>→ <strong>Reactivate past customers</strong> — your existing customer base is your cheapest marketing channel. A structured re-engagement campaign typically costs 5x less than acquiring new customers.</p>" +
-      "<p>→ <strong>Replicate your best month</strong> — your best revenue month was <strong>" + fin.bestMonth.date.toISOString().slice(0,7) + "</strong> at <strong>" + f(fin.bestMonth.revenue, currency) + "</strong>. What was different? Weather, marketing, a specific product, a promotion? Identify and systematise it.</p>",
-
-      ["How do I reduce costs?", "What's my 3-year forecast?", "How risky is my growth plan?"]
-    );
-  },
-
-
-  /* ===================================================================
-     7. COST REDUCTION
-  =================================================================== */
-
-  costReduction: function(fin, currency) {
-    var f = ImpactGridAI.fc;
-
-    var savingTarget5  = fin.avgExp * 0.05;
-    var savingTarget10 = fin.avgExp * 0.10;
-    var marginIf5      = fin.totalRev > 0 ? ((fin.totalProf + savingTarget5 * fin.n) / fin.totalRev * 100) : 0;
-
-    return ImpactGridAI.card("Cost Reduction Analysis",
-      "<p>Your average monthly expenses are <strong>" + f(fin.avgExp, currency) + "</strong> — an expense ratio of <strong>" + fin.expRatio.toFixed(1) + "%</strong>.</p>" +
-
-      "<p>A <strong>5% cost reduction</strong> would save <strong>" + f(savingTarget5, currency) + "/month</strong> and lift your margin to approximately <strong>" + marginIf5.toFixed(1) + "%</strong>. A 10% reduction saves <strong>" + f(savingTarget10, currency) + "/month</strong>.</p>" +
-
-      "<p><strong>Where to look first (in order of typical SME impact):</strong></p>" +
-      "<p>→ <strong>Software subscriptions</strong> — audit every recurring payment. Most SMEs find 20–30% of subscriptions are unused or duplicated.</p>" +
-      "<p>→ <strong>Supplier renegotiation</strong> — if you have been with a supplier for 12+ months, request a review. Loyalty should translate to better pricing.</p>" +
-      "<p>→ <strong>Energy and premises</strong> — often the second or third largest cost for physical businesses. Switching providers or renegotiating leases can yield 10–20% savings.</p>" +
-      "<p>→ <strong>Payment processing fees</strong> — often overlooked. At scale, moving from 2.5% to 1.5% transaction fees can be significant.</p>" +
-      (fin.expCreep > 3 ? "<p><strong style='color:#f5a623;'>⚠ Cost creep of " + fin.expCreep.toFixed(1) + " percentage points detected</strong> — your expense ratio has been rising. This should be addressed urgently before it compounds further.</p>" : ""),
-
-      ["What's my profit margin?", "How can I grow revenue?", "What's my break-even?"]
-    );
-  },
-
-
-  /* ===================================================================
-     8. BREAK-EVEN ANALYSIS
-  =================================================================== */
-
-  breakEvenAnalysis: function(fin, currency) {
-    var f = ImpactGridAI.fc;
-
-    var monthsToBreakEven = fin.avgRev >= fin.breakEven ? 0 : "N/A";
-    var coverageRatio = fin.breakEven > 0 ? fin.avgRev / fin.breakEven : 0;
-    var safetyMargin  = fin.avgRev > fin.breakEven ? ((fin.avgRev - fin.breakEven) / fin.avgRev * 100) : 0;
-
-    var coverageNote = coverageRatio >= 1.3
-      ? "You are operating <strong>" + ((coverageRatio-1)*100).toFixed(0) + "% above break-even</strong> — a healthy safety margin."
-      : coverageRatio >= 1.0
-        ? "You are above break-even but with a slim safety margin of <strong>" + safetyMargin.toFixed(1) + "%</strong>. A 10–15% revenue drop would put you at risk."
-        : "Your average revenue is <strong>below the estimated break-even point</strong>. This is a critical warning — the business is likely operating at a loss.";
-
-    return ImpactGridAI.card("Break-Even Analysis",
-      "<p><em>Note: Break-even is estimated based on your expense structure. For precision, categorise your fixed vs variable costs.</em></p>" +
-      "<p>Estimated monthly break-even: <strong>" + f(fin.breakEven, currency) + "</strong><br>" +
-      "Your average monthly revenue: <strong>" + f(fin.avgRev, currency) + "</strong><br>" +
-      "Safety margin above break-even: <strong>" + safetyMargin.toFixed(1) + "%</strong></p>" +
-      "<p>" + coverageNote + "</p>" +
-      "<p>To improve your break-even position, either reduce fixed costs or increase revenue. A <strong>10% reduction in fixed costs</strong> would lower your break-even to approximately <strong>" + f(fin.breakEven * 0.9, currency) + "</strong>.</p>",
-      ["How do I reduce fixed costs?", "What's my profit margin?", "How risky is my business?"]
-    );
-  },
-
-
-  /* ===================================================================
-     9. CASH FLOW ANALYSIS
-  =================================================================== */
-
-  cashFlowAnalysis: function(fin, currency) {
-    var f = ImpactGridAI.fc;
-
-    var monthlyNetCashFlow = fin.avgProf;
-    var burnRate = fin.avgExp;
-    var cashHealthy = monthlyNetCashFlow > 0;
-
-    var runway = cashHealthy
-      ? "Your business is cash-flow positive — generating <strong>" + f(monthlyNetCashFlow, currency) + "</strong> in net profit per month on average."
-      : "Your business is cash-flow negative — burning approximately <strong>" + f(Math.abs(monthlyNetCashFlow), currency) + "</strong> per month.";
-
-    var advice = cashHealthy
-      ? "Build a cash reserve equivalent to <strong>3 months of expenses</strong> (" + f(burnRate * 3, currency) + ") before deploying surplus into growth."
-      : "At this burn rate, you need to either increase revenue or reduce expenses urgently. Identify the single largest controllable cost and address it this week.";
-
-    return ImpactGridAI.card("Cash Flow Health",
-      "<p>Monthly burn rate (expenses): <strong>" + f(burnRate, currency) + "</strong><br>" +
-      "Average monthly profit: <strong style='color:" + (cashHealthy ? "#2dd4a0" : "#ff4d6d") + ";'>" + f(monthlyNetCashFlow, currency) + "</strong></p>" +
-      "<p>" + runway + "</p>" +
-      "<p>" + advice + "</p>" +
-      "<p>3-month reserve target: <strong>" + f(burnRate * 3, currency) + "</strong><br>" +
-      "6-month reserve target: <strong>" + f(burnRate * 6, currency) + "</strong></p>",
-      ["How do I improve cash flow?", "What's my break-even?", "How can I reduce costs?"]
-    );
-  },
-
-
-  /* ===================================================================
-     10. BEST / WORST MONTH ANALYSIS
-  =================================================================== */
-
-  bestWorstAnalysis: function(fin, currency) {
-    var f = ImpactGridAI.fc;
-
-    var revDiff   = fin.bestMonth.revenue - fin.worstMonth.revenue;
-    var profDiff  = fin.bestProfit.profit  - fin.worstProfit.profit;
-
-    return ImpactGridAI.card("Month-by-Month Performance",
-      "<p><strong>Best revenue month:</strong> <strong>" + fin.bestMonth.date.toISOString().slice(0,7) + "</strong> — " + f(fin.bestMonth.revenue, currency) + "</p>" +
-      "<p><strong>Worst revenue month:</strong> <strong>" + fin.worstMonth.date.toISOString().slice(0,7) + "</strong> — " + f(fin.worstMonth.revenue, currency) + "</p>" +
-      "<p>The gap between best and worst revenue months is <strong>" + f(revDiff, currency) + "</strong> — a swing of <strong>" + (revDiff / fin.worstMonth.revenue * 100).toFixed(0) + "%</strong>.</p>" +
-      "<p><strong>Best profit month:</strong> " + fin.bestProfit.date.toISOString().slice(0,7) + " at " + f(fin.bestProfit.profit, currency) + "<br>" +
-      "<strong>Worst profit month:</strong> " + fin.worstProfit.date.toISOString().slice(0,7) + " at " + f(fin.worstProfit.profit, currency) + "</p>" +
-      "<p>The key question is: <strong>what made " + fin.bestMonth.date.toISOString().slice(0,7) + " so strong?</strong> Was it a campaign, a product launch, seasonal demand, or something else? Systematising what worked in your best month is typically the highest-ROI growth activity available to an SME.</p>",
-      ["Are there seasonal patterns?", "How can I replicate my best month?", "What's my growth trend?"]
-    );
-  },
-
-
-  /* ===================================================================
-     11. SEASONAL ANALYSIS
-  =================================================================== */
-
-  seasonalAnalysis: function(fin, currency) {
-    var f = ImpactGridAI.fc;
-    var data = fin.data;
-
-    // Group by calendar month
-    var byMonth = {};
-    data.forEach(function(d) {
-      var m = d.date.getMonth();
-      if (!byMonth[m]) byMonth[m] = [];
-      byMonth[m].push(d.revenue);
-    });
-
-    var monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    var monthAvgs  = [];
-    Object.keys(byMonth).forEach(function(m) {
-      var avg = byMonth[m].reduce(function(a,b){return a+b;},0) / byMonth[m].length;
-      monthAvgs.push({ month: monthNames[parseInt(m)], avg: avg });
-    });
-    monthAvgs.sort(function(a,b){return b.avg - a.avg;});
-
-    if (data.length < 6) {
-      return ImpactGridAI.card("Seasonal Patterns",
-        "<p>I need at least 6 months of data to identify reliable seasonal patterns. You currently have <strong>" + data.length + " months</strong>. Keep adding data and I'll identify your seasonal peaks and troughs.</p>",
-        ["What can I do now?", "Show my performance", "What are my risks?"]
-      );
-    }
-
-    return ImpactGridAI.card("Seasonal Pattern Analysis",
-      "<p>Based on your data, here are your revenue patterns by calendar month:</p>" +
-      "<p><strong>Strongest months:</strong> " + monthAvgs.slice(0,3).map(function(m){return "<strong>"+m.month+"</strong> (" + f(m.avg, currency) + ")";}).join(", ") + "</p>" +
-      "<p><strong>Weakest months:</strong> " + monthAvgs.slice(-3).reverse().map(function(m){return "<strong>"+m.month+"</strong> (" + f(m.avg, currency) + ")";}).join(", ") + "</p>" +
-      "<p>Plan around these patterns: <strong>prepare your strongest offers and marketing for peak months</strong>, and <strong>reduce discretionary spending in weaker months</strong> to protect cash flow.</p>",
-      ["How do I prepare for slow periods?", "What's my revenue trend?", "Give me strategic advice"]
-    );
-  },
-
-
-  /* ===================================================================
-     12. EXPENSE ANALYSIS
-  =================================================================== */
-
-  expenseAnalysis: function(fin, currency) {
-    var f = ImpactGridAI.fc;
-
-    var expTrend = fin.expCreep > 3 ? "rising faster than revenue ⚠"
-      : fin.expCreep < -2 ? "improving — good cost discipline ✓"
-      : "broadly stable";
-
-    return ImpactGridAI.card("Expense Analysis",
-      "<p>Total expenses over " + fin.n + " months: <strong>" + f(fin.totalExp, currency) + "</strong><br>" +
-      "Average monthly expenses: <strong>" + f(fin.avgExp, currency) + "</strong><br>" +
-      "Expense ratio: <strong>" + fin.expRatio.toFixed(1) + "%</strong> of revenue<br>" +
-      "Cost trend: <strong>" + expTrend + "</strong></p>" +
-
-      (fin.expRatio > 85 ? "<p><strong style='color:#ff4d6d;'>High expense ratio of " + fin.expRatio.toFixed(1) + "%</strong> — for every £1 of revenue, " + fin.expRatio.toFixed(0) + "p is going on costs. The SME benchmark is 75–80%. Getting to 80% would add <strong>" + f((fin.expRatio - 80) / 100 * fin.totalRev / fin.n, currency) + "/month</strong> to your bottom line.</p>" : "") +
-
-      (fin.expCreep > 3 ? "<p><strong style='color:#f5a623;'>Cost creep detected:</strong> Your expense ratio has risen by " + fin.expCreep.toFixed(1) + " percentage points recently. This is eroding your margins silently.</p>" : "") +
-
-      "<p><strong>Expense optimisation priority order:</strong><br>" +
-      "→ Fixed recurring costs (subscriptions, contracts, rent)<br>" +
-      "→ Variable costs with alternatives (suppliers, utilities)<br>" +
-      "→ One-off costs that are becoming regular</p>",
-      ["What's my profit margin?", "How do I hit break-even?", "Give me strategic advice"]
-    );
-  },
-
-
-  /* ===================================================================
-     13. TREND ANALYSIS
-  =================================================================== */
-
-  trendAnalysis: function(fin, currency) {
-    var f = ImpactGridAI.fc;
-
-    var trendWord = fin.trendAccel > 1 ? "accelerating" : fin.trendAccel < -1 ? "decelerating" : "steady";
-    var trendNote = fin.trendAccel > 1
-      ? "Growth is <strong>accelerating</strong> — recent months are outperforming earlier ones. This is a positive signal, but ensure your cost structure can scale with demand."
-      : fin.trendAccel < -1
-        ? "Growth is <strong>decelerating</strong> — your rate of growth has slowed in recent months. This warrants investigation before it becomes a reversal."
-        : "Growth rate is <strong>broadly consistent</strong> — no significant acceleration or deceleration detected.";
-
-    var streakNote = fin.currentStreak >= 2
-      ? "You are currently on a <strong>" + fin.currentStreak + "-month " + fin.streakType + " streak</strong>."
-      : "No significant streak pattern in recent data.";
-
-    return ImpactGridAI.card("Revenue Trend Analysis",
-      "<p>Overall growth (first to last month): <strong>" + fin.overallGrowth.toFixed(1) + "%</strong><br>" +
-      "Average monthly growth rate: <strong>" + fin.avgGrowth.toFixed(2) + "%</strong><br>" +
-      "Trend momentum: <strong>" + trendWord + "</strong></p>" +
-      "<p>" + trendNote + "</p>" +
-      "<p>" + streakNote + "</p>" +
-      "<p>Margin trend: <strong>" + (fin.marginTrend > 1 ? "improving ↑" : fin.marginTrend < -1 ? "deteriorating ↓" : "stable →") + "</strong> (" + (fin.marginTrend >= 0 ? "+" : "") + fin.marginTrend.toFixed(1) + " percentage points over the period)</p>",
-      ["What's causing my trend?", "Give me a 3-year forecast", "What should I do next?"]
-    );
-  },
-
-
-  /* ===================================================================
-     14. BENCHMARK ANALYSIS — industry comparisons
-  =================================================================== */
-
-  benchmarkAnalysis: function(fin, currency) {
-    var biz = document.getElementById("businessType") ? document.getElementById("businessType").value : "other";
-
-    var benchmarks = {
-      cafe:       { margin: [8,  15], growth: [2, 5],  expRatio: [80, 88], label: "Café / Hospitality" },
-      retail:     { margin: [5,  12], growth: [2, 6],  expRatio: [82, 90], label: "Retail" },
-      ecommerce:  { margin: [10, 25], growth: [5, 15], expRatio: [70, 82], label: "E-commerce" },
-      consulting: { margin: [25, 50], growth: [3, 8],  expRatio: [50, 70], label: "Consulting" },
-      trade:      { margin: [10, 20], growth: [2, 6],  expRatio: [75, 85], label: "Trade / Contractor" },
-      service:    { margin: [15, 30], growth: [3, 8],  expRatio: [65, 80], label: "Service SME" },
-      other:      { margin: [10, 20], growth: [2, 6],  expRatio: [75, 85], label: "SME Average" }
-    };
-
-    var b = benchmarks[biz] || benchmarks["other"];
-
-    function compare(val, low, high, higherBetter) {
-      if (higherBetter) {
-        if (val >= high) return { status: "✓ Above benchmark", color: "#2dd4a0" };
-        if (val >= low)  return { status: "~ At benchmark",    color: "#c8a96e" };
-        return { status: "✗ Below benchmark", color: "#ff4d6d" };
-      } else {
-        if (val <= low)  return { status: "✓ Below benchmark", color: "#2dd4a0" };
-        if (val <= high) return { status: "~ At benchmark",    color: "#c8a96e" };
-        return { status: "✗ Above benchmark", color: "#ff4d6d" };
-      }
-    }
-
-    var mComp = compare(fin.margin,   b.margin[0],   b.margin[1],   true);
-    var gComp = compare(fin.avgGrowth,b.growth[0],   b.growth[1],   true);
-    var eComp = compare(fin.expRatio, b.expRatio[0], b.expRatio[1], false);
-
-    return ImpactGridAI.card("Industry Benchmark — " + b.label,
-      "<p>Your results vs typical <strong>" + b.label + "</strong> benchmarks:</p>" +
-
-      "<div style='margin:12px 0;'>" +
-        ImpactGridAI.benchmarkRow("Profit Margin",    fin.margin.toFixed(1)+"%",    b.margin[0]+"-"+b.margin[1]+"%",   mComp) +
-        ImpactGridAI.benchmarkRow("Monthly Growth",   fin.avgGrowth.toFixed(1)+"%", b.growth[0]+"-"+b.growth[1]+"%",   gComp) +
-        ImpactGridAI.benchmarkRow("Expense Ratio",    fin.expRatio.toFixed(1)+"%",  b.expRatio[0]+"-"+b.expRatio[1]+"%", eComp) +
-      "</div>" +
-
-      "<p style='font-size:12px;color:var(--text-muted);'>Benchmarks are based on typical UK SME ranges. Your actual targets may vary by size, location, and business model.</p>",
-      ["How do I improve my margin?", "How can I reduce expenses?", "Give me strategic advice"]
-    );
-  },
-
-  benchmarkRow: function(label, yours, benchmark, comp) {
-    return "<div style='display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:#0a0d18;border:1px solid #1a2035;border-radius:6px;margin-bottom:6px;flex-wrap:wrap;gap:6px;'>" +
-      "<span style='font-size:12px;color:#7a8ba8;'>" + label + "</span>" +
-      "<span style='font-family:monospace;font-size:12px;color:#edf0f7;font-weight:700;'>" + yours + "</span>" +
-      "<span style='font-size:11px;color:#3d4e68;'>benchmark: " + benchmark + "</span>" +
-      "<span style='font-size:11px;color:" + comp.color + ";font-weight:600;'>" + comp.status + "</span>" +
-    "</div>";
-  },
-
-
-  /* ===================================================================
-     15. INVESTMENT ADVICE
-  =================================================================== */
-
-  investmentAdvice: function(fin, currency) {
-    var f = ImpactGridAI.fc;
-    var investable = fin.avgProf * 0.25;
-    var readiness = fin.margin > 15 ? "strong" : fin.margin > 8 ? "cautious" : "not yet ready";
-
-    return ImpactGridAI.card("Investment & Reinvestment Advice",
-      "<p>Investment readiness: <strong>" + readiness + "</strong>. At your current margins, a conservative reinvestment budget would be approximately <strong>" + f(investable, currency) + "/month</strong> (25% of average profit).</p>" +
-
-      (fin.margin < 8 ? "<p><strong style='color:#ff4d6d;'>Do not invest in growth yet.</strong> With margins below 8%, investment amplifies risk rather than opportunity. Improve margins first, then deploy capital.</p>" :
-      fin.margin < 15 ? "<p>Prioritise <strong>low-cost, high-return investments</strong>: staff training, process automation, or improving existing product quality. Avoid large fixed commitments until margins improve to 15%+.</p>" :
-      "<p>You are in a strong position to reinvest. Highest-ROI options for SMEs at this stage: <strong>marketing</strong> (if LTV > 3× CAC), <strong>technology/automation</strong> (if it saves more than it costs within 12 months), or <strong>talent</strong> (if it directly drives revenue).</p>") +
-
-      "<p>Whatever you invest in, set a <strong>clear 90-day return target</strong> and measure against it. Untracked investment is the most common source of SME financial drift.</p>",
-      ["What's my profit margin?", "How can I grow revenue?", "Give me strategic advice"]
-    );
-  },
-
-
-  /* ===================================================================
-     16. CHART NARRATIVE
-  =================================================================== */
-
-  chartNarrative: function(fin, currency) {
-    var f = ImpactGridAI.fc;
-    var trendWord = fin.avgGrowth > 3 ? "upward" : fin.avgGrowth > 0 ? "gradual upward" : "declining";
-
-    return ImpactGridAI.card("Chart Interpretation",
-      "<p>Your charts tell the following story:</p>" +
-      "<p><strong>Revenue chart</strong> shows a <strong>" + trendWord + " trend</strong> at " + fin.avgGrowth.toFixed(1) + "%/month average growth. " +
-      (fin.trendAccel > 1 ? "Growth is accelerating — a positive signal." : fin.trendAccel < -1 ? "Growth is slowing — worth investigating." : "Growth rate is consistent.") + "</p>" +
-      "<p><strong>Profit chart</strong> reflects your " + fin.margin.toFixed(1) + "% margin. " +
-      (fin.marginTrend > 1 ? "Margins are improving — good cost discipline." : fin.marginTrend < -1 ? "Margins are compressing — expenses are growing faster than revenue." : "Margins are stable.") + "</p>" +
-      "<p><strong>Expense chart</strong> — your average monthly cost is <strong>" + f(fin.avgExp, currency) + "</strong>. " +
-      (fin.expCreep > 3 ? "<strong style='color:#f5a623;'>Cost creep detected — expenses rising faster than revenue.</strong>" : "Costs appear well-controlled relative to revenue.") + "</p>" +
-      "<p>Best revenue month was <strong>" + fin.bestMonth.date.toISOString().slice(0,7) + "</strong> (" + f(fin.bestMonth.revenue, currency) + "). Worst was <strong>" + fin.worstMonth.date.toISOString().slice(0,7) + "</strong> (" + f(fin.worstMonth.revenue, currency) + ").</p>",
-      ["What caused the best month?", "Are there seasonal patterns?", "What's my risk level?"]
-    );
-  },
-
-
-  /* ===================================================================
-     17. OPEN QUESTION — catch-all intelligent responder
-  =================================================================== */
-
-  openQuestion: function(q, fin, currency, history) {
-    // Check conversation history for context
-    if (history.length >= 2) {
-      var lastTopic = history[history.length - 2].content || "";
-      if (lastTopic.toLowerCase().includes("risk"))    return ImpactGridAI.riskAnalysis(fin, currency);
-      if (lastTopic.toLowerCase().includes("margin"))  return ImpactGridAI.marginAnalysis(fin, currency);
-      if (lastTopic.toLowerCase().includes("growth"))  return ImpactGridAI.growthStrategy(fin, currency);
-      if (lastTopic.toLowerCase().includes("cost"))    return ImpactGridAI.costReduction(fin, currency);
-    }
-    // Default to full summary
-    return ImpactGridAI.performanceSummary(fin, currency);
-  },
-
-
-  /* ===================================================================
-     ANOMALY DETECTION
-  =================================================================== */
-
-  detectAnomalies: function(data) {
-    if (!data || data.length < 3) return [];
-    var revenues = data.map(function(d){return d.revenue;});
-    var mean = revenues.reduce(function(a,b){return a+b;},0) / revenues.length;
-    var variance = revenues.reduce(function(a,b){return a+Math.pow(b-mean,2);},0) / revenues.length;
-    var std = Math.sqrt(variance);
-    return data.filter(function(d){ return Math.abs(d.revenue - mean) > 1.5 * std; });
-  },
-
-  anomalyAnalysis: function(fin, currency) {
-    var f = ImpactGridAI.fc;
-    if (fin.anomalies.length === 0) {
-      return ImpactGridAI.card("Anomaly Detection",
-        "<p>No significant anomalies detected across your <strong>" + fin.n + " months</strong> of data. Revenue behaviour is consistent — no unusual spikes or drops that deviate significantly from your average.</p>",
-        ["What's my revenue trend?", "Show seasonal patterns", "What are my risks?"]
-      );
-    }
-    var list = fin.anomalies.map(function(a){
-      var dir = a.revenue > fin.avgRev ? "above" : "below";
-      return "<strong>" + a.date.toISOString().slice(0,7) + "</strong> — " + f(a.revenue, currency) + " (" + Math.abs(((a.revenue-fin.avgRev)/fin.avgRev)*100).toFixed(0) + "% " + dir + " average)";
-    }).join("<br>");
-
-    return ImpactGridAI.card("Anomaly Detection",
-      "<p>The following months show statistically unusual revenue patterns:</p><p>" + list + "</p>" +
-      "<p>For each anomaly, ask: <strong>what was different that month?</strong> If it was a peak, identify what drove it and make it repeatable. If it was a trough, identify the cause and build a contingency for it.</p>",
-      ["What caused these anomalies?", "Are there seasonal patterns?", "How do I stabilise revenue?"]
-    );
-  },
-
-
-  /* ===================================================================
-     HEALTH SCORE CALCULATOR
-  =================================================================== */
-
-  calcHealthScore: function(fin) {
-    var score = 0;
-    score += Math.min(30, Math.max(0, fin.margin * 1.2));        // max 30 pts from margin
-    score += Math.min(25, Math.max(0, fin.avgGrowth * 3));       // max 25 pts from growth
-    score += Math.min(25, Math.max(0, 25 - fin.volatility*0.5)); // max 25 pts from stability
-    score += Math.min(20, Math.max(0, (100-fin.expRatio)*0.5));  // max 20 pts from expense ratio
-    return Math.min(100, Math.max(0, Math.round(score)));
-  },
-
-
-  /* ===================================================================
-     HELPERS & UTILITIES
-  =================================================================== */
-
-  is: function(q, keywords) {
-    return keywords.some(function(k){ return q.indexOf(k) !== -1; });
-  },
-
-  sum: function(data, key) {
-    return data.reduce(function(a,b){ return a + (b[key]||0); }, 0);
-  },
-
-  fc: function(value, currency) {
-    try {
-      return new Intl.NumberFormat(undefined, { style:"currency", currency: currency||"GBP" }).format(value);
-    } catch(e) { return value.toFixed(2); }
-  },
-
-  forecastTile: function(label, value, color) {
-    return "<div style='padding:12px;background:#0a0d18;border:1px solid " + color + "33;border-radius:8px;text-align:center;'>" +
-      "<div style='font-size:10px;font-family:monospace;color:" + color + ";letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;'>" + label + "</div>" +
-      "<div style='font-size:13px;font-weight:700;color:" + color + ";'>" + value + "</div>" +
-    "</div>";
-  },
-
-  card: function(title, body, suggestions) {
-    var chips = suggestions ? "<div class='ai-suggestions'>" +
-      suggestions.map(function(s){
-        return "<button class='ai-suggestion-chip' onclick=\"fillAIChat('" + s.replace(/'/g,"\\'") + "')\">" + s + "</button>";
-      }).join("") +
-    "</div>" : "";
-
-    return "<p><strong>" + title + "</strong></p>" + body + chips;
-  },
-
-  noData: function() {
-    return ImpactGridAI.card("ImpactGrid AI — Financial Adviser",
-      "<p>Add your first month of revenue and expenses above and I'll begin analysing your business immediately.</p>" +
-      "<p>Once you have 3+ months of data, I can provide: profit margin analysis, risk assessment, growth forecasts, expense optimisation, industry benchmarks, break-even calculations, and strategic priorities.</p>",
-      ["How does ImpactGrid work?", "What data do I need?"]
-    );
-  },
-
-  calculateGrowth: function(data) {
-    if (!data || data.length < 2) return 0;
-    var first = data[0].revenue, last = data[data.length-1].revenue;
-    return first > 0 ? (last - first) / first * 100 : 0;
-  },
-
-  calculateVolatility: function(data) {
-    if (!data || data.length < 2) return 0;
-    var revs = data.map(function(d){return d.revenue;});
-    var mean = revs.reduce(function(a,b){return a+b;},0)/revs.length;
-    var variance = revs.reduce(function(a,b){return a+Math.pow(b-mean,2);},0)/revs.length;
-    return mean > 0 ? Math.sqrt(variance)/mean*100 : 0;
-  },
-
-  getMargin: function(data) {
-    var rev  = ImpactGridAI.sum(data,"revenue");
-    var prof = ImpactGridAI.sum(data,"profit");
-    return rev > 0 ? prof/rev*100 : 0;
-  },
-
-  calculateAvgMonthlyGrowth: function(data) {
-    if (!data || data.length < 2) return 0;
-    var rates = [];
-    for (var i = 1; i < data.length; i++) {
-      if (data[i-1].revenue > 0)
-        rates.push((data[i].revenue - data[i-1].revenue) / data[i-1].revenue);
-    }
-    return rates.length > 0 ? rates.reduce(function(a,b){return a+b;},0)/rates.length : 0;
-  }
-
-};
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ImpactGrid — How Far Can You Go Without an API?</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Manrope:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg:#06080f; --surface:#0e1220; --elevated:#121729;
+  --border:#1a2035; --mid:#222b42;
+  --gold:#c8a96e; --gold-l:#e2c98a; --gold-g:rgba(200,169,110,0.10);
+  --success:#2dd4a0; --warn:#f5a623; --danger:#ff4d6d; --blue:#3d7fff;
+  --text:#edf0f7; --sec:#7a8ba8; --muted:#3d4e68;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Manrope',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:2.5rem 1.5rem 5rem;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 55% 40% at 5% 0%,rgba(200,169,110,0.05) 0%,transparent 60%),radial-gradient(ellipse 45% 35% at 95% 100%,rgba(61,127,255,0.04) 0%,transparent 55%);pointer-events:none;z-index:0;}
+.wrap{max-width:860px;margin:0 auto;position:relative;z-index:1;}
+
+/* HERO */
+.hero{text-align:center;margin-bottom:3.5rem;}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--gold);letter-spacing:0.14em;text-transform:uppercase;border:1px solid rgba(200,169,110,0.2);border-radius:20px;padding:5px 15px;margin-bottom:18px;background:rgba(200,169,110,0.06);}
+.hero-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--gold);box-shadow:0 0 8px rgba(200,169,110,0.8);}
+.hero h1{font-family:'Syne',sans-serif;font-size:2.4rem;font-weight:800;color:var(--text);letter-spacing:-0.5px;line-height:1.15;margin-bottom:12px;}
+.hero h1 span{color:var(--gold-l);}
+.hero p{font-size:0.92rem;color:var(--sec);max-width:560px;margin:0 auto;line-height:1.7;}
+
+/* VERDICT BOX */
+.verdict{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:3rem;}
+.v-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;position:relative;overflow:hidden;}
+.v-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.v-card.gold::before{background:linear-gradient(to right,transparent,var(--gold),transparent);}
+.v-card.green::before{background:linear-gradient(to right,transparent,var(--success),transparent);}
+.v-card.blue::before{background:linear-gradient(to right,transparent,var(--blue),transparent);}
+.v-card.warn::before{background:linear-gradient(to right,transparent,var(--warn),transparent);}
+.v-label{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);margin-bottom:8px;}
+.v-val{font-family:'Syne',sans-serif;font-size:1.35rem;font-weight:800;}
+.v-sub{font-size:11px;color:var(--sec);margin-top:4px;line-height:1.5;}
+
+/* TABS */
+.tab-row{display:flex;gap:8px;margin-bottom:2rem;flex-wrap:wrap;}
+.tab{padding:8px 18px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--sec);font-size:12px;font-family:'Manrope',sans-serif;font-weight:600;cursor:pointer;transition:all 0.18s;letter-spacing:0.02em;}
+.tab.active,.tab:hover{background:var(--gold-g);border-color:var(--gold);color:var(--gold-l);}
+
+/* CONTENT PANELS */
+.panel{display:none;}
+.panel.active{display:block;}
+
+/* SECTION GROUP */
+.section-title{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.14em;color:var(--muted);margin-bottom:12px;}
+
+/* FEATURE CARDS */
+.feature-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:2rem;}
+.feat{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px 22px;transition:border-color 0.2s,transform 0.2s;cursor:default;}
+.feat:hover{border-color:var(--mid);transform:translateY(-2px);}
+.feat-top{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+.feat-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.feat-meta{}
+.feat-difficulty{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px;}
+.feat-name{font-family:'Syne',sans-serif;font-size:0.95rem;font-weight:700;color:var(--text);}
+.feat-desc{font-size:12.5px;color:var(--sec);line-height:1.7;margin-bottom:10px;}
+.feat-tags{display:flex;flex-wrap:wrap;gap:6px;}
+.tag{font-size:10px;font-family:'JetBrains Mono',monospace;padding:3px 9px;border-radius:12px;border:1px solid;}
+
+/* DIFFICULTY COLOURS */
+.d-easy{color:var(--success);}
+.d-medium{color:var(--gold);}
+.d-hard{color:var(--warn);}
+.d-expert{color:var(--danger);}
+.bg-easy{background:rgba(45,212,160,0.1);border-color:rgba(45,212,160,0.3);color:var(--success);}
+.bg-medium{background:rgba(200,169,110,0.1);border-color:rgba(200,169,110,0.3);color:var(--gold-l);}
+.bg-hard{background:rgba(245,166,35,0.1);border-color:rgba(245,166,35,0.3);color:var(--warn);}
+.bg-expert{background:rgba(255,77,109,0.1);border-color:rgba(255,77,109,0.3);color:var(--danger);}
+.bg-blue{background:rgba(61,127,255,0.1);border-color:rgba(61,127,255,0.3);color:#79b8ff;}
+
+/* HONEST WALL */
+.wall{background:var(--surface);border:1px solid var(--mid);border-radius:16px;padding:28px 30px;margin-bottom:2rem;}
+.wall h2{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:16px;color:var(--text);}
+.wall-row{display:flex;gap:14px;padding:11px 0;border-bottom:1px solid var(--border);align-items:flex-start;}
+.wall-row:last-child{border-bottom:none;}
+.wall-icon{font-size:16px;flex-shrink:0;margin-top:2px;width:24px;text-align:center;}
+.wall-text{font-size:13px;color:var(--sec);line-height:1.65;}
+.wall-text strong{color:var(--text);}
+
+/* COMPARISON TABLE */
+.compare{width:100%;border-collapse:collapse;margin-bottom:2rem;font-size:13px;}
+.compare th{padding:10px 14px;text-align:left;font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);border-bottom:1px solid var(--border);}
+.compare td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.compare tr:last-child td{border-bottom:none;}
+.compare tr:hover td{background:rgba(255,255,255,0.015);}
+.yes{color:var(--success);font-weight:700;}
+.no{color:var(--danger);}
+.partial{color:var(--warn);}
+
+/* ROADMAP */
+.roadmap{position:relative;padding-left:30px;}
+.roadmap::before{content:'';position:absolute;left:10px;top:0;bottom:0;width:1px;background:linear-gradient(to bottom,var(--gold),var(--blue),transparent);}
+.rm-item{position:relative;margin-bottom:22px;}
+.rm-dot{position:absolute;left:-24px;top:4px;width:10px;height:10px;border-radius:50%;border:2px solid;}
+.rm-phase{font-family:'JetBrains Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px;}
+.rm-title{font-family:'Syne',sans-serif;font-size:0.92rem;font-weight:700;color:var(--text);margin-bottom:4px;}
+.rm-detail{font-size:12px;color:var(--sec);line-height:1.65;}
+
+/* BOTTOM CTA */
+.cta{text-align:center;margin-top:3rem;padding:32px;background:var(--surface);border:1px solid var(--mid);border-radius:16px;position:relative;overflow:hidden;}
+.cta::before{content:'';position:absolute;top:0;left:15%;right:15%;height:1px;background:linear-gradient(to right,transparent,var(--gold-l),transparent);opacity:0.5;}
+.cta h2{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;margin-bottom:10px;}
+.cta p{font-size:13px;color:var(--sec);max-width:480px;margin:0 auto 20px;line-height:1.7;}
+.cta-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.btn-gold{padding:11px 24px;background:linear-gradient(135deg,#b8923e,var(--gold-l));color:#06080f;font-weight:700;font-size:13px;border:none;border-radius:8px;cursor:pointer;font-family:'Manrope',sans-serif;transition:opacity 0.15s,transform 0.15s;}
+.btn-gold:hover{opacity:0.9;transform:translateY(-1px);}
+.btn-ghost{padding:11px 24px;background:transparent;color:var(--sec);font-size:13px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-family:'Manrope',sans-serif;transition:border-color 0.15s,color 0.15s;}
+.btn-ghost:hover{border-color:var(--gold);color:var(--gold-l);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">ImpactGrid · No-API Upgrade Guide</div>
+  <h1>How advanced can ImpactGrid get <span>without an API?</span></h1>
+  <p>The short answer: very. Here's an honest breakdown of what's possible with pure JavaScript, what takes a weekend, and where the real ceiling is.</p>
+</div>
+
+<!-- VERDICT CARDS -->
+<div class="verdict">
+  <div class="v-card gold">
+    <div class="v-label">AI Intelligence</div>
+    <div class="v-val" style="color:var(--gold-l);">85%</div>
+    <div class="v-sub">of what an API gives you is achievable with a well-built rule engine</div>
+  </div>
+  <div class="v-card green">
+    <div class="v-label">Dashboard Features</div>
+    <div class="v-val" style="color:var(--success);">100%</div>
+    <div class="v-sub">Zero features require an API. Every dashboard upgrade is pure JS</div>
+  </div>
+  <div class="v-card blue">
+    <div class="v-label">What needs API</div>
+    <div class="v-val" style="color:#79b8ff;">~15%</div>
+    <div class="v-sub">Only true natural language understanding &amp; generative text</div>
+  </div>
+  <div class="v-card warn">
+    <div class="v-label">Upgrade Time</div>
+    <div class="v-val" style="color:var(--warn);">2–4 weeks</div>
+    <div class="v-sub">To implement all features below at a production level</div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tab-row">
+  <button class="tab active" onclick="switchTab('ai')">🧠 AI Upgrades</button>
+  <button class="tab" onclick="switchTab('dashboard')">📊 Dashboard Features</button>
+  <button class="tab" onclick="switchTab('ux')">✨ UX &amp; Design</button>
+  <button class="tab" onclick="switchTab('limits')">⚠️ Honest Limits</button>
+  <button class="tab" onclick="switchTab('roadmap')">🗺️ Build Roadmap</button>
+</div>
+
+<!-- ===================== AI PANEL ===================== -->
+<div class="panel active" id="panel-ai">
+
+  <div class="section-title">AI engine upgrades — no API required</div>
+  <div class="feature-grid">
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-icon" style="background:rgba(200,169,110,0.12);">🎯</div>
+        <div class="feat-meta">
+          <div class="feat-difficulty d-easy">Easy · Already Built</div>
+          <div class="feat-name">Deep Financial Analysis Engine</div>
+        </div>
+      </div>
+      <div class="feat-desc">The current v3 engine already does break-even, margin, volatility, trend acceleration, cost creep, anomaly detection, benchmarks and 17 specialist modules. This is 80% of what a paid AI tool does.</div>
+      <div class="feat-tags"><span class="tag bg-easy">Done ✓</span><span class="tag bg-blue">17 modules</span></div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-icon" style="background:rgba(45,212,160,0.12);">🧮</div>
+        <div class="feat-meta">
+          <div class="feat-difficulty d-easy">Easy · 1 day</div>
+          <div class="feat-name">Advanced Statistical Engine</div>
+        </div>
+      </div>
+      <div class="feat-desc">Add linear regression for trend lines, moving averages (3-month, 6-month), standard error bands on forecasts, and R² confidence scoring. Makes forecasts dramatically more accurate.</div>
+      <div class="feat-tags"><span class="tag bg-easy">Pure JS</span><span class="tag bg-medium">Math only</span></div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-icon" style="background:rgba(61,127,255,0.12);">🔮</div>
+        <div class="feat-meta">
+          <div class="feat-difficulty d-medium">Medium · 2 days</div>
+          <div class="feat-name">ML-Style Forecasting (No API)</div>
+        </div>
+      </div>
+      <div class="feat-desc">Exponential smoothing (Holt-Winters), seasonal decomposition, and weighted trend forecasting. This is the same algorithm Excel and Google Sheets use. Significantly better than simple growth-rate projection.</div>
+      <div class="feat-tags"><span class="tag bg-medium">No library needed</span><span class="tag bg-blue">Holt-Winters</span></div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-icon" style="background:rgba(245,166,35,0.12);">💬</div>
+        <div class="feat-meta">
+          <div class="feat-difficulty d-medium">Medium · 2 days</div>
+          <div class="feat-name">Smarter Conversation Memory</div>
+        </div>
+      </div>
+      <div class="feat-desc">Track conversation topics over multiple turns. If user asks about risk then asks "why?", understand that "why" refers to risk. Store context slots (last topic, last metric discussed, last time period mentioned) for natural follow-ups.</div>
+      <div class="feat-tags"><span class="tag bg-medium">State machine</span><span class="tag bg-blue">localStorage</span></div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-icon" style="background:rgba(200,169,110,0.12);">📝</div>
+        <div class="feat-meta">
+          <div class="feat-difficulty d-medium">Medium · 2 days</div>
+          <div class="feat-name">Auto-Generated Financial Narratives</div>
+        </div>
+      </div>
+      <div class="feat-desc">Build a template engine that writes a full paragraph-style financial narrative every month — like a real management accountant would. "In Q3, revenue grew 12% driven by strong August performance, though margin compression of 2.3pts warrants attention."</div>
+      <div class="feat-tags"><span class="tag bg-medium">Template engine</span><span class="tag bg-easy">No API</span></div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-icon" style="background:rgba(255,77,109,0.12);">🚨</div>
+        <div class="feat-meta">
+          <div class="feat-difficulty d-easy">Easy · 4 hours</div>
+          <div class="feat-name">Proactive Alert System</div>
+        </div>
+      </div>
+      <div class="feat-desc">AI watches your data continuously. When margin drops below a threshold, growth reverses, or volatility spikes — it proactively surfaces an alert card without being asked. Like a real adviser who flags problems before you notice.</div>
+      <div class="feat-tags"><span class="tag bg-easy">Rule-based</span><span class="tag bg-medium">Threshold engine</span></div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-icon" style="background:rgba(45,212,160,0.12);">🎓</div>
+        <div class="feat-meta">
+          <div class="feat-difficulty d-hard">Medium-Hard · 3 days</div>
+          <div class="feat-name">Scenario Modelling ("What If" Engine)</div>
+        </div>
+      </div>
+      <div class="feat-desc">Let users ask "what if I cut expenses by 15%?" or "what if revenue grows 5% next month?" — the AI recalculates all metrics, reforecasts, and shows the new financial picture in real time. No API needed.</div>
+      <div class="feat-tags"><span class="tag bg-hard">Simulation engine</span><span class="tag bg-blue">Interactive</span></div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-icon" style="background:rgba(61,127,255,0.12);">📊</div>
+        <div class="feat-meta">
+          <div class="feat-difficulty d-hard">Hard · 4 days</div>
+          <div class="feat-name">Comparative Period Intelligence</div>
+        </div>
+      </div>
+      <div class="feat-desc">Month-over-month, quarter-over-quarter, and year-over-year comparisons with automatic commentary. "This quarter is your best quarter on record, outperforming Q2 by 23%. Revenue per month is 18% above the 6-month average."</div>
+      <div class="feat-tags"><span class="tag bg-hard">Period engine</span><span class="tag bg-medium">Auto-commentary</span></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===================== DASHBOARD PANEL ===================== -->
+<div class="panel" id="panel-dashboard">
+
+  <div class="section-title">Dashboard &amp; data features — all pure JS</div>
+  <div class="feature-grid">
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-icon" style="background:rgba(200,169,110,0.12);">💾</div>
+        <div class="feat-meta">
+          <div class="feat-difficulty d-easy">Easy · 2 hours</div>
+          <div class="feat-name">Auto-Save Everything (localStorage)</div>
+        </div>
+      </div>
+      <div class="feat-desc">Business data, chat history, currency preference, and business profile all persist between sessions automatically. Nothing is lost on refresh. Feels like a real SaaS app.</div>
+      <div class="feat-tags"><span class="tag bg-easy">localStorage</span><span class="tag bg-easy">2 hrs</span></div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-icon" style="background:rgba(45,212,160,0.12);">📁</div>
+        <div class="feat-meta">
+          <div class="feat-difficulty d-easy">Easy · 1 day</div>
+          <div class="feat-name">Multi-Business Support</div>
+        </div>
+      </div>
+      <div class="feat-desc">Let users create and switch between multiple business profiles (e.g. "Main Business", "Side Project"). Each has its own dataset, stored separately in localStorage. A real power-user feature.</div>
+      <div class="feat-tags"><span class="tag bg-easy">localStorage</span><span class="tag bg-medium">Profile switcher</span></div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-icon" style="background:rgba(61,127,255,0.12);">📤</div>
+        <div class="feat-meta">
+          <div class="feat-difficulty d-easy">Easy · 4 hours</div>
+          <div class="feat-name">Export to Excel / CSV</div>
+        </div>
+      </div>
+      <div class="feat-desc">Export all financial records, AI insights, and performance scores to a formatted Excel file using SheetJS (already loaded). One click to produce a spreadsheet clients and accountants can use immediately.</div>
+      <div class="feat-tags"><span class="tag bg-easy">SheetJS</span><span class="tag bg-easy">Already loaded</span></div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-icon" style="background:rgba(245,166,35,0.12);">🎯</div>
+        <div class="feat-meta">
+          <div class="feat-difficulty d-medium">Medium · 2 days</div>
+          <div class="feat-name">Goals &amp; Targets Module</div>
+        </div>
+      </div>
+      <div class="feat-desc">Let users set revenue, profit, and margin targets. Dashboard shows progress bars, countdown to target, and AI commentary on whether the target is achievable at current growth rate.</div>
+      <div class="feat-tags"><span class="tag bg-medium">Goal engine</span><span class="tag bg-blue">Progress tracking</span></div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-icon" style="background:rgba(200,169,110,0.12);">📅</div>
+        <div class="feat-meta">
+          <div class="feat-difficulty d-medium">Medium · 2 days</div>
+          <div class="feat-name">Budget vs Actuals Tracking</div>
+        </div>
+      </div>
+      <div class="feat-desc">Users enter monthly budgets alongside actuals. Dashboard shows variance (over/under), percentage deviation, and AI flags months where actuals deviated significantly from budget.</div>
+      <div class="feat-tags"><span class="tag bg-medium">Variance engine</span><span class="tag bg-blue">Budget tracking</span></div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-icon" style="background:rgba(45,212,160,0.12);">📈</div>
+        <div class="feat-meta">
+          <div class="feat-difficulty d-medium">Medium · 3 days</div>
+          <div class="feat-name">Advanced Chart Suite</div>
+        </div>
+      </div>
+      <div class="feat-desc">Waterfall charts (shows revenue → expenses → profit visually), scatter plots (revenue vs profit correlation), rolling 3-month average overlay on all line charts, and a heat map calendar showing best/worst months by colour intensity.</div>
+      <div class="feat-tags"><span class="tag bg-medium">Chart.js</span><span class="tag bg-blue">5 new chart types</span></div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-icon" style="background:rgba(255,77,109,0.12);">🔔</div>
+        <div class="feat-meta">
+          <div class="feat-difficulty d-easy">Easy · 1 day</div>
+          <div class="feat-name">Smart Notification Centre</div>
+        </div>
+      </div>
+      <div class="feat-desc">A notification bell in the header. When AI detects something important (margin drop, anomaly, goal reached, 3-month streak) it adds a notification. Users can review and dismiss them.</div>
+      <div class="feat-tags"><span class="tag bg-easy">Event system</span><span class="tag bg-easy">Pure JS</span></div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-icon" style="background:rgba(61,127,255,0.12);">🗓️</div>
+        <div class="feat-meta">
+          <div class="feat-difficulty d-hard">Hard · 4 days</div>
+          <div class="feat-name">Expense Category Breakdown</div>
+        </div>
+      </div>
+      <div class="feat-desc">Let users split expenses into categories (staff, rent, marketing, COGS, etc.) per month. AI then analyses which category is growing fastest, which has the best reduction potential, and produces a category-level P&amp;L.</div>
+      <div class="feat-tags"><span class="tag bg-hard">Data model change</span><span class="tag bg-medium">New UI</span></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===================== UX PANEL ===================== -->
+<div class="panel" id="panel-ux">
+
+  <div class="section-title">UX &amp; design upgrades — zero cost, high impact</div>
+  <div class="feature-grid">
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-icon" style="background:rgba(200,169,110,0.12);">🎨</div>
+        <div class="feat-meta">
+          <div class="feat-difficulty d-easy">Easy · 1 day</div>
+          <div class="feat-name">Onboarding Flow</div>
+        </div>
+      </div>
+      <div class="feat-desc">A guided first-run experience: welcome screen → business type → currency → first 3 months entered step-by-step with tips. New users instantly understand the product. Huge impact on retention.</div>
+      <div class="feat-tags"><span class="tag bg-easy">Step wizard</span><span class="tag bg-blue">First-run only</span></div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-icon" style="background:rgba(45,212,160,0.12);">✨</div>
+        <div class="feat-meta">
+          <div class="feat-difficulty d-easy">Easy · 4 hours</div>
+          <div class="feat-name">Animated Dashboard Transitions</div>
+        </div>
+      </div>
+      <div class="feat-desc">Charts animate in on data entry, numbers count up from 0 when first rendered, section transitions use smooth fade/slide. Metric tiles "flash" gold when values update. Makes the product feel alive and premium.</div>
+      <div class="feat-tags"><span class="tag bg-easy">CSS animations</span><span class="tag bg-easy">JS counters</span></div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-icon" style="background:rgba(61,127,255,0.12);">📱</div>
+        <div class="feat-meta">
+          <div class="feat-difficulty d-medium">Medium · 2 days</div>
+          <div class="feat-name">Full Mobile Optimisation</div>
+        </div>
+      </div>
+      <div class="feat-desc">Bottom navigation bar on mobile, touch-friendly chart tooltips, swipe gestures between sections, and collapsible card groups. Currently the layout works on mobile but isn't optimised for it.</div>
+      <div class="feat-tags"><span class="tag bg-medium">Responsive</span><span class="tag bg-blue">Touch events</span></div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-icon" style="background:rgba(245,166,35,0.12);">🏆</div>
+        <div class="feat-meta">
+          <div class="feat-difficulty d-medium">Medium · 2 days</div>
+          <div class="feat-name">Achievement &amp; Milestone System</div>
+        </div>
+      </div>
+      <div class="feat-desc">Celebrate financial milestones automatically: first profitable month, 6-month streak, margin above 20%, revenue doubling. Gold badge notifications with a brief celebration moment. Increases engagement significantly.</div>
+      <div class="feat-tags"><span class="tag bg-medium">Event triggers</span><span class="tag bg-blue">Milestone engine</span></div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-icon" style="background:rgba(200,169,110,0.12);">🖨️</div>
+        <div class="feat-meta">
+          <div class="feat-difficulty d-hard">Hard · 3 days</div>
+          <div class="feat-name">Enhanced PDF Reports</div>
+        </div>
+      </div>
+      <div class="feat-desc">Charts rendered as images in PDF (using canvas.toDataURL), executive summary page, a full AI narrative section, colour-coded tables, and a branded cover page with logo. Currently the PDF is text-only — charts would make it professional-grade.</div>
+      <div class="feat-tags"><span class="tag bg-hard">Canvas → PNG</span><span class="tag bg-medium">jsPDF</span></div>
+    </div>
+
+    <div class="feat">
+      <div class="feat-top">
+        <div class="feat-icon" style="background:rgba(45,212,160,0.12);">🌐</div>
+        <div class="feat-meta">
+          <div class="feat-difficulty d-easy">Easy · 4 hours</div>
+          <div class="feat-name">Keyboard Shortcuts</div>
+        </div>
+      </div>
+      <div class="feat-desc">Power-user keyboard shortcuts: N for new record, 1-6 to switch sections, / to focus AI chat, Ctrl+P for PDF, Ctrl+S to export. Makes the product feel like professional software.</div>
+      <div class="feat-tags"><span class="tag bg-easy">keydown events</span><span class="tag bg-easy">4 hours</span></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===================== LIMITS PANEL ===================== -->
+<div class="panel" id="panel-limits">
+
+  <div class="wall" style="border-color:rgba(255,77,109,0.3);">
+    <h2 style="color:var(--text);">What you genuinely cannot do without an API</h2>
+
+    <div class="wall-row">
+      <div class="wall-icon">✗</div>
+      <div class="wall-text"><strong>True natural language understanding</strong> — if a user types "my sales were terrible last quarter, what's going on?", a rule engine can detect "terrible" and "last quarter" but cannot truly understand the emotional context, ambiguity, or generate a unique empathetic response. An API gives you this.</div>
+    </div>
+    <div class="wall-row">
+      <div class="wall-icon">✗</div>
+      <div class="wall-text"><strong>Generative text</strong> — every response from the no-API engine is assembled from pre-written templates. Two businesses with the same data get the same words. An API generates genuinely unique, contextual responses every time.</div>
+    </div>
+    <div class="wall-row">
+      <div class="wall-icon">✗</div>
+      <div class="wall-text"><strong>Open-ended questions</strong> — "what do you think about my pricing strategy?" or "is now a good time to hire?" requires reasoning the no-API engine cannot do. It needs to weigh multiple factors dynamically.</div>
+    </div>
+    <div class="wall-row">
+      <div class="wall-icon">✗</div>
+      <div class="wall-text"><strong>Multi-document intelligence</strong> — analysing invoices, contracts, or bank statements and extracting insights from unstructured text requires an LLM. Rule engines can only work with structured numbers.</div>
+    </div>
+    <div class="wall-row">
+      <div class="wall-icon">~</div>
+      <div class="wall-text"><strong>Partial: Sentiment &amp; intent detection</strong> — you can improve keyword matching significantly (synonym lists, fuzzy matching, question parsing) but it will never match a model that truly understands language.</div>
+    </div>
+  </div>
+
+  <table class="compare">
+    <thead>
+      <tr>
+        <th>Capability</th>
+        <th>No API (Rule Engine)</th>
+        <th>With Claude API</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Financial ratio analysis</td>
+        <td class="yes">✓ Full</td>
+        <td class="yes">✓ Full</td>
+      </tr>
+      <tr>
+        <td>Forecasting &amp; projections</td>
+        <td class="yes">✓ Full (Holt-Winters etc.)</td>
+        <td class="yes">✓ Full + narrative</td>
+      </tr>
+      <tr>
+        <td>Risk &amp; anomaly detection</td>
+        <td class="yes">✓ Full</td>
+        <td class="yes">✓ Full + deeper context</td>
+      </tr>
+      <tr>
+        <td>Industry benchmarking</td>
+        <td class="yes">✓ With hardcoded benchmarks</td>
+        <td class="yes">✓ Dynamic + research-based</td>
+      </tr>
+      <tr>
+        <td>Strategic recommendations</td>
+        <td class="partial">~ Template-based, very good</td>
+        <td class="yes">✓ Genuinely unique advice</td>
+      </tr>
+      <tr>
+        <td>Natural conversation</td>
+        <td class="partial">~ Keyword routing, good UX</td>
+        <td class="yes">✓ True understanding</td>
+      </tr>
+      <tr>
+        <td>Open-ended questions</td>
+        <td class="no">✗ Needs pre-defined intent</td>
+        <td class="yes">✓ Handles anything</td>
+      </tr>
+      <tr>
+        <td>Unique response text</td>
+        <td class="no">✗ Template assembled</td>
+        <td class="yes">✓ Generated fresh every time</td>
+      </tr>
+      <tr>
+        <td>Cost</td>
+        <td class="yes">✓ Free</td>
+        <td class="partial">~ £0.50–£3/month</td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+
+<!-- ===================== ROADMAP PANEL ===================== -->
+<div class="panel" id="panel-roadmap">
+
+  <div class="section-title">Recommended build order — most impact first</div>
+  <div class="roadmap">
+
+    <div class="rm-item">
+      <div class="rm-dot" style="background:var(--success);border-color:var(--success);box-shadow:0 0 8px rgba(45,212,160,0.5);"></div>
+      <div class="rm-phase d-easy">Week 1 — Quick Wins (Already Done + Easy)</div>
+      <div class="rm-title">Auto-Save + Export to Excel + Proactive Alerts</div>
+      <div class="rm-detail">localStorage persistence so nothing is lost on refresh. Export button to produce a spreadsheet in one click. Alert system that flags issues without being asked. Combined: ~2 days of work, massive quality jump.</div>
+    </div>
+
+    <div class="rm-item">
+      <div class="rm-dot" style="background:var(--gold);border-color:var(--gold);box-shadow:0 0 8px rgba(200,169,110,0.5);"></div>
+      <div class="rm-phase d-medium">Week 2 — AI Brain Upgrade</div>
+      <div class="rm-title">Holt-Winters Forecasting + Scenario Engine + Smarter Memory</div>
+      <div class="rm-detail">Replace simple growth projection with exponential smoothing for dramatically better forecasts. Add "what if" scenario modelling. Improve conversation memory to track topic context across messages.</div>
+    </div>
+
+    <div class="rm-item">
+      <div class="rm-dot" style="background:var(--blue);border-color:var(--blue);box-shadow:0 0 8px rgba(61,127,255,0.5);"></div>
+      <div class="rm-phase d-medium">Week 3 — Data Power Features</div>
+      <div class="rm-title">Goals + Budget vs Actuals + Multi-Business Support</div>
+      <div class="rm-detail">Let users set targets and track against them. Add budget entry so AI can flag variances. Multi-business profile switching so the tool works for users with more than one venture.</div>
+    </div>
+
+    <div class="rm-item">
+      <div class="rm-dot" style="background:var(--warn);border-color:var(--warn);box-shadow:0 0 8px rgba(245,166,35,0.5);"></div>
+      <div class="rm-phase d-hard">Week 4 — Premium Finishing</div>
+      <div class="rm-title">Charts in PDF + Advanced Chart Suite + Mobile + Onboarding</div>
+      <div class="rm-detail">Render charts as PNG images inside PDF reports. Add waterfall charts and heat map calendar. Full mobile optimisation. Guided onboarding flow for new users. After this, ImpactGrid is a genuinely competitive financial SaaS product.</div>
+    </div>
+
+    <div class="rm-item">
+      <div class="rm-dot" style="background:var(--danger);border-color:var(--danger);"></div>
+      <div class="rm-phase" style="color:var(--sec);">Optional — If You Want It</div>
+      <div class="rm-title">Add Claude API for the final 15%</div>
+      <div class="rm-detail">After all the above, the only remaining gap is true natural language and generative responses. At ~£1–2/month for typical SME usage, this is the most cost-effective upgrade available. Supabase Edge Function takes under an hour to set up.</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- CTA -->
+<div class="cta">
+  <h2>Ready to build the next upgrade?</h2>
+  <p>Tell me which feature you want first and I'll build it — complete, working code, no placeholders. Each one is a single conversation away.</p>
+  <div class="cta-btns">
+    <button class="btn-gold" onclick="alert('Tell Claude: \'Build the auto-save and localStorage persistence for ImpactGrid\'')">Start with Auto-Save</button>
+    <button class="btn-gold" onclick="alert('Tell Claude: \'Build the Holt-Winters forecasting engine for ImpactGrid\'')">Holt-Winters Forecasts</button>
+    <button class="btn-ghost" onclick="alert('Tell Claude: \'Build the scenario what-if engine for ImpactGrid\'')">What-If Scenarios</button>
+  </div>
+</div>
+
+</div>
+<script>
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('active');});
+  event.target.classList.add('active');
+  document.getElementById('panel-' + id).classList.add('active');
+}
+</script>
+</body>
+</html>
