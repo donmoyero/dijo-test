@@ -4,142 +4,120 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Available Jobs — ImpactGrid Creator Intelligence</title>
-<meta name="description" content="Live opportunities powered by Dijo AI."/>
-
-<link rel="icon" href="favicon.ico"/>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800;900&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
 
 <link rel="stylesheet" href="shared.css"/>
 
 <style>
-.page-wrap{padding-top:calc(var(--nav-h) + 24px);}
+.page-wrap{padding-top:40px;}
 </style>
 </head>
 
 <body>
 
-<div id="ig-nav"></div>
-
 <div class="page-wrap">
 
-  <div style="max-width:var(--max-w);margin:0 auto;">
-    <div class="page-hero">
-      <div class="page-hero-bg"></div>
-      <div class="page-hero-eyebrow">ImpactGrid Network</div>
-      <h1>Available <span>Jobs</span></h1>
-      <p>AI-powered job matching. Not just listings.</p>
-    </div>
+  <h1 style="text-align:center;">Available Jobs</h1>
+
+  <!-- DIJO HERO -->
+  <div style="text-align:center;margin:30px;">
+    <h2>Meet Dijo 🤖</h2>
+    <p>AI that finds and ranks the best jobs for you</p>
+
+    <button onclick="startMatching()" style="padding:12px 20px;">
+      Start AI Matching
+    </button>
   </div>
 
-  <div class="divider"></div>
+  <!-- STATS -->
+  <div style="text-align:center;margin-bottom:20px;">
+    <p>Total Jobs: <span id="sTotal">0</span></p>
+  </div>
 
-  <section class="section anim">
+  <!-- SEARCH -->
+  <div style="text-align:center;margin-bottom:20px;">
+    <input id="searchInput" placeholder="Search jobs..." oninput="filterJobs()" />
+  </div>
 
-    <!-- DIJO HERO -->
-    <div class="dijo-hero">
-      <div class="dijo-hero-text">
-        <h2>Meet <span>Dijo</span></h2>
-        <p>I scan real jobs, rank them for you, and apply automatically.</p>
-
-        <div class="dijo-pills">
-          <div class="dijo-pill">1 Free Application</div>
-          <div class="dijo-pill">AI Ranking</div>
-          <div class="dijo-pill">Auto Apply</div>
-        </div>
-
-        <button onclick="startMatching()" class="dijo-start-btn">Start AI Matching →</button>
-      </div>
-
-      <img class="dijo-avatar" src="dijo-mascot.png"/>
-    </div>
-
-    <!-- STATS -->
-    <div class="stats-band">
-      <div class="stats-band-item">
-        <div class="stats-band-value" id="sTotal">0</div>
-        <div class="stats-band-label">Live Jobs</div>
-      </div>
-      <div class="stats-band-item">
-        <div class="stats-band-value" id="sCompanies">0</div>
-        <div class="stats-band-label">Companies</div>
-      </div>
-      <div class="stats-band-item">
-        <div class="stats-band-value" id="sNew">0</div>
-        <div class="stats-band-label">New</div>
-      </div>
-    </div>
-
-    <!-- FILTER -->
-    <div class="filter-bar">
-      <input id="searchInput" class="filter-input" placeholder="Search jobs..." oninput="filterJobs()"/>
-    </div>
-
-    <!-- JOBS -->
-    <div id="jobsGrid"></div>
-
-    <div class="jobs-cta">
-      <h3>Let Dijo Work For You</h3>
-      <p>Upload your CV and get matched to real opportunities.</p>
-      <a href="./dijo.html" class="btn-pri">Apply with Dijo →</a>
-    </div>
-
-  </section>
+  <!-- JOBS -->
+  <div id="jobsGrid"></div>
 
 </div>
 
 <script>
-const DIJO_API = 'https://impactgrid-dijo-api.onrender.com';
+const API = "https://impactgrid-dijo-api.onrender.com";
 
 let allJobs = [];
-let userCV = "";
 
 /* =========================
    INIT
 ========================= */
-document.addEventListener('DOMContentLoaded', async function() {
-  await loadJobs();
-});
+document.addEventListener("DOMContentLoaded", loadJobs);
 
 /* =========================
    LOAD JOBS
 ========================= */
 async function loadJobs() {
   try {
-    const res = await fetch(DIJO_API + '/ai/jobs');
+    const res = await fetch(API + "/ai/jobs");
     const data = await res.json();
 
     allJobs = data.jobs || [];
 
-    updateStats();
+    document.getElementById("sTotal").textContent = allJobs.length;
+
     renderJobs(allJobs);
 
-  } catch (e) {
-    document.getElementById('jobsGrid').innerHTML =
-      '<p style="text-align:center;padding:40px;">Failed to load jobs</p>';
+  } catch (err) {
+    document.getElementById("jobsGrid").innerHTML = "Failed to load jobs";
   }
 }
 
 /* =========================
-   START AI MATCHING
+   START MATCHING (FIXED)
 ========================= */
 async function startMatching() {
-  userCV = prompt("Paste your CV text:");
+  const cv = prompt("Paste your CV");
 
-  if (!userCV) return;
+  if (!cv) return;
 
-  document.getElementById('jobsGrid').innerHTML =
-    '<p style="text-align:center;padding:40px;">Dijo is analysing your CV...</p>';
+  document.getElementById("jobsGrid").innerHTML =
+    "<p style='text-align:center;'>Dijo analysing...</p>";
 
+  /* 1️⃣ Extract profile */
+  let profile;
+
+  try {
+    const res = await fetch(API + "/ai/extract-profile", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ cv_text: cv })
+    });
+
+    profile = await res.json();
+
+  } catch (e) {
+    console.error(e);
+    return;
+  }
+
+  /* 2️⃣ Filter jobs using keywords */
+  const keywords = profile.search_keywords || [];
+
+  const filtered = allJobs.filter(j => {
+    const text = (j.title + " " + j.description).toLowerCase();
+    return keywords.some(k => text.includes(k));
+  }).slice(0, 8);
+
+  /* 3️⃣ Match */
   const results = [];
 
-  for (let job of allJobs.slice(0, 10)) {
+  for (let job of filtered) {
     try {
-      const res = await fetch(DIJO_API + '/ai/match', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch(API + "/ai/match", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
         body: JSON.stringify({
-          cv_text: userCV,
+          cv_text: cv,
           job_description: job.description
         })
       });
@@ -152,82 +130,63 @@ async function startMatching() {
         reasons: data.result?.reasons || []
       });
 
-    } catch (e) {
-      console.error(e);
-    }
+    } catch (e) {}
   }
 
-  results.sort((a, b) => b.score - a.score);
+  results.sort((a,b) => b.score - a.score);
 
-  renderMatches(results);
+  renderMatches(results.slice(0,3));
 }
 
 /* =========================
    FILTER
 ========================= */
 function filterJobs() {
-  const q = document.getElementById('searchInput').value.toLowerCase();
+  const q = document.getElementById("searchInput").value.toLowerCase();
 
   const filtered = allJobs.filter(j =>
-    (j.title || '').toLowerCase().includes(q) ||
-    (j.company_name || '').toLowerCase().includes(q) ||
-    (j.description || '').toLowerCase().includes(q)
+    (j.title||"").toLowerCase().includes(q) ||
+    (j.company_name||"").toLowerCase().includes(q)
   );
 
   renderJobs(filtered);
 }
 
 /* =========================
-   STATS
-========================= */
-function updateStats() {
-  document.getElementById('sTotal').textContent = allJobs.length;
-
-  const companies = new Set(allJobs.map(j => j.company_name));
-  document.getElementById('sCompanies').textContent = companies.size;
-
-  const weekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-  const newJobs = allJobs.filter(j => new Date(j.created_at).getTime() > weekAgo);
-
-  document.getElementById('sNew').textContent = newJobs.length;
-}
-
-/* =========================
-   RENDER NORMAL
+   RENDER JOBS
 ========================= */
 function renderJobs(jobs) {
-  const el = document.getElementById('jobsGrid');
+  const el = document.getElementById("jobsGrid");
 
   el.innerHTML = jobs.map(j => `
-    <div class="job-card">
-      <h3>${escapeHTML(j.title || 'Job')}</h3>
-      <p><strong>${escapeHTML(j.company_name || '')}</strong></p>
-      <p>${escapeHTML((j.description || '').substring(0,120))}...</p>
-      <a href="./dijo.html" class="job-apply-btn">Apply with Dijo</a>
+    <div style="border:1px solid #333;padding:10px;margin:10px;">
+      <h3>${escapeHTML(j.title)}</h3>
+      <p>${escapeHTML(j.company_name)}</p>
     </div>
-  `).join('');
+  `).join("");
 }
 
 /* =========================
    RENDER MATCHES
 ========================= */
 function renderMatches(jobs) {
-  const el = document.getElementById('jobsGrid');
+  const el = document.getElementById("jobsGrid");
 
-  el.innerHTML = jobs.map((j, i) => `
-    <div class="job-card" style="border:2px solid ${i === 0 ? 'gold' : '#222'};">
-      <h3>${escapeHTML(j.title)}</h3>
-      <p><strong>${escapeHTML(j.company_name)}</strong></p>
+  el.innerHTML = `
+    <h3 style="text-align:center;">🔥 Top Matches</h3>
 
-      <p>🔥 Match: <strong>${j.score}%</strong></p>
+    ${jobs.map((j,i)=>`
+      <div style="border:2px solid ${i===0?'gold':'#333'};padding:10px;margin:10px;">
+        <h3>${escapeHTML(j.title)}</h3>
+        <p>${escapeHTML(j.company_name)}</p>
+        <p>${j.score}% Match</p>
 
-      <ul>
-        ${(j.reasons || []).slice(0,2).map(r => `<li>${escapeHTML(r)}</li>`).join('')}
-      </ul>
-
-      <a href="./dijo.html" class="job-apply-btn">Apply with Dijo</a>
-    </div>
-  `).join('');
+        <ul>
+          ${(j.reasons||[]).slice(0,2).map(r=>`<li>${escapeHTML(r)}</li>`).join("")}
+        </ul>
+      </div>
+    `).join("")}
+  `;
 }
 
 /* =========================
