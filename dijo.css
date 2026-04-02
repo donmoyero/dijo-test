@@ -1,1 +1,116 @@
+/* RESET */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
+body {
+  font-family: Arial, sans-serif;
+  background: #0f172a;
+  color: #ffffff;
+}
+
+/* LANDING */
+#landing {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+}
+
+#landing h1 {
+  font-size: 42px;
+  font-weight: bold;
+}
+
+#landing p {
+  color: #94a3b8;
+}
+
+/* BUTTON */
+button {
+  padding: 12px 20px;
+  background: #6366f1;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  background: #4f46e5;
+}
+
+/* APP */
+#app {
+  padding: 40px 20px;
+  max-width: 600px;
+  margin: auto;
+}
+
+/* STEPS */
+.step {
+  display: none;
+}
+
+.step.active {
+  display: block;
+}
+
+/* INPUTS */
+input,
+textarea {
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: white;
+}
+
+textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* JOB CARDS */
+#jobs {
+  margin-top: 20px;
+}
+
+.job-card {
+  background: #1e293b;
+  padding: 16px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  border: 1px solid #334155;
+}
+
+.job-card h3 {
+  margin-bottom: 6px;
+}
+
+.job-card p {
+  font-size: 14px;
+  color: #94a3b8;
+}
+
+/* RESULT */
+#result {
+  margin-top: 20px;
+  padding: 16px;
+  background: #1e293b;
+  border-radius: 10px;
+}
+
+/* LOADING */
+#loadingText {
+  margin-top: 10px;
+  color: #38bdf8;
+}
