@@ -73,28 +73,24 @@ async function analyseCV() {
   let jobs = [];
 
   try {
-    const res = await fetch(API + "/ai/jobs");
+    const res = await fetch(
+      API + "/ai/jobs?keywords=" + JSON.stringify(extractedProfile.search_keywords || [])
+    );
+
     const data = await res.json();
     jobs = data.jobs || [];
+
   } catch (err) {
     console.error(err);
     return;
   }
-
-  /* FILTER */
-  const keywords = extractedProfile.search_keywords || [];
-
-  const filtered = jobs.filter(j => {
-    const text = (j.title + " " + j.description).toLowerCase();
-    return keywords.some(k => text.includes(k.toLowerCase()));
-  }).slice(0, 8);
 
   document.getElementById("loadingText").innerText = "Matching jobs...";
 
   /* MATCH */
   const results = [];
 
-  for (let job of filtered) {
+  for (let job of jobs.slice(0, 8)) {
     try {
       const res = await fetch(API + "/ai/match", {
         method: "POST",
@@ -155,21 +151,51 @@ function showResults() {
 }
 
 /* =========================
-   APPLY
+   APPLY (REAL)
 ========================= */
-function applyJob(index) {
+async function applyJob(index) {
   const job = matchedJobs[index];
+
+  const email = prompt("Enter your email to receive your application:");
+
+  if (!email) {
+    alert("Email is required");
+    return;
+  }
 
   goToStep("step5");
 
-  setTimeout(() => {
+  try {
+    const res = await fetch(API + "/ai/apply", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        email,
+        cv_text: cvText,
+        job_description: job.description,
+        job_title: job.title,
+        company_name: job.company_name
+      })
+    });
+
+    const data = await res.json();
+
     document.getElementById("result").innerHTML = `
-      <p>✅ Applied to <strong>${escapeHTML(job.title)}</strong></p>
-      <p>Dijo says: Strong match. Apply to more roles to increase success.</p>
+      <p>📩 Application ready for <strong>${escapeHTML(job.title)}</strong></p>
+      <p>We’ve sent your tailored CV and cover letter to your email.</p>
+      <p><strong>Next step:</strong> Check your email and complete the application.</p>
     `;
 
-    goToStep("step6");
-  }, 1500);
+  } catch (err) {
+    console.error(err);
+
+    document.getElementById("result").innerHTML = `
+      <p>❌ Something went wrong</p>
+      <p>Please try again</p>
+    `;
+  }
+
+  goToStep("step6");
 }
 
 /* =========================
