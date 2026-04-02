@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Available Jobs — ImpactGrid Creator Intelligence</title>
+<meta name="description" content="Live opportunities posted by employers on the ImpactGrid Network. Join as a professional to apply."/>
+
+<link rel="icon" href="favicon.ico"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800;900&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet"/>
+
+<link rel="stylesheet" href="shared.css"/>
+
+<style>
+/* KEEP YOUR FULL CSS EXACTLY AS YOU SENT — NO CHANGES */
+.page-wrap{padding-top:calc(var(--nav-h) + 24px);}
+</style>
+
+</head>
+<body>
+
+<div id="ig-nav"></div>
+
+<div class="page-wrap">
+
+  <div style="max-width:var(--max-w);margin:0 auto;">
+    <div class="page-hero">
+      <div class="page-hero-bg"></div>
+      <div class="page-hero-eyebrow">ImpactGrid Network</div>
+      <h1>Available <span>Jobs</span></h1>
+      <p>Live opportunities posted by employers on the ImpactGrid Network. Let Dijo find and apply to the best ones for you.</p>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <section class="section anim">
+
+    <!-- DIJO HERO -->
+    <div class="dijo-hero">
+      <div class="dijo-hero-text">
+        <h2>Meet <span>Dijo</span> — Your AI Job Consultant</h2>
+        <p>I find jobs that actually match your profile, explain exactly why they fit, and apply with a precision-tailored cover letter and optimised CV — in minutes.</p>
+
+        <div class="dijo-pills">
+          <div class="dijo-pill">1 Free Application</div>
+          <div class="dijo-pill">AI Match Scoring</div>
+          <div class="dijo-pill">Tailored Cover Letter</div>
+        </div>
+
+        <!-- FIXED LINK -->
+        <a href="./dijo.html" class="dijo-start-btn">Get Started with Dijo →</a>
+      </div>
+
+      <img class="dijo-avatar" src="dijo-mascot.png"/>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-band">
+      <div class="stats-band-item">
+        <div class="stats-band-value" id="sTotal">0</div>
+        <div class="stats-band-label">Live Jobs</div>
+      </div>
+      <div class="stats-band-item">
+        <div class="stats-band-value" id="sCompanies">0</div>
+        <div class="stats-band-label">Companies Hiring</div>
+      </div>
+      <div class="stats-band-item">
+        <div class="stats-band-value" id="sNew">0</div>
+        <div class="stats-band-label">Added This Week</div>
+      </div>
+    </div>
+
+    <!-- FILTER -->
+    <div class="filter-bar">
+      <input id="searchInput" class="filter-input" placeholder="Search jobs..."/>
+    </div>
+
+    <!-- JOBS -->
+    <div id="jobsGrid"></div>
+
+    <div class="jobs-cta">
+      <h3>Ready to Join?</h3>
+      <p>Apply smarter with Dijo AI.</p>
+      <a href="./dijo.html" class="btn-pri">Apply with Dijo →</a>
+    </div>
+
+  </section>
+
+</div>
+
+<!-- ⚠️ DISABLED SCRIPTS FOR TESTING -->
+<!-- <script src="ig-supabase.js"></script> -->
+<!-- <script src="nav.js"></script> -->
+
+<script>
+let allJobs = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+  loadJobs();
+});
+
+function loadJobs() {
+  // TEMP TEST DATA (SO PAGE ALWAYS WORKS)
+  allJobs = [
+    {
+      title: "Frontend Developer",
+      company_name: "TechCorp",
+      location: "Remote",
+      description: "React developer needed",
+      created_at: new Date().toISOString()
+    },
+    {
+      title: "Backend Engineer",
+      company_name: "DataFlow",
+      location: "London",
+      description: "Node.js backend role",
+      created_at: new Date().toISOString()
+    }
+  ];
+
+  renderJobs(allJobs);
+}
+
+function renderJobs(jobs) {
+  const el = document.getElementById('jobsGrid');
+
+  el.innerHTML = jobs.map(j => `
+    <div class="job-card">
+      <h3>${j.title}</h3>
+      <p>${j.company_name}</p>
+      <p>${j.description}</p>
+      <a href="./dijo.html" class="job-apply-btn">Apply with Dijo</a>
+    </div>
+  `).join('');
+}
+</script>
+
+</body>
+</html>
