@@ -31,7 +31,7 @@ async function loadJobs() {
 }
 
 /* =========================
-   START MATCHING
+   START MATCHING (FIXED 🔥)
 ========================= */
 async function startMatching() {
   userCV = prompt("Paste your CV:");
@@ -39,16 +39,53 @@ async function startMatching() {
   if (!userCV) return;
 
   document.getElementById('jobsGrid').innerHTML =
-    '<p style="text-align:center;padding:40px;">Dijo is finding your best jobs...</p>';
+    '<p style="text-align:center;padding:40px;">Dijo is understanding your profile...</p>';
 
+  /* =========================
+     STEP 1: EXTRACT PROFILE
+  ========================= */
+  let profile;
+
+  try {
+    const res = await fetch(DIJO_API + '/ai/extract-profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cv_text: userCV })
+    });
+
+    profile = await res.json();
+
+  } catch (e) {
+    console.error('Profile extraction failed', e);
+    return;
+  }
+
+  const keywords = profile.search_keywords || [];
+
+  /* =========================
+     STEP 2: FILTER JOBS (REAL FIX)
+  ========================= */
+  const filteredJobs = allJobs.filter(job => {
+    const text = (job.title + " " + job.description).toLowerCase();
+
+    return keywords.some(k => text.includes(k.toLowerCase()));
+  }).slice(0, 10);
+
+  if (!filteredJobs.length) {
+    document.getElementById('jobsGrid').innerHTML =
+      '<p style="text-align:center;padding:40px;">No strong matches found.</p>';
+    return;
+  }
+
+  document.getElementById('jobsGrid').innerHTML =
+    '<p style="text-align:center;padding:40px;">Matching you with best jobs...</p>';
+
+  /* =========================
+     STEP 3: MATCH
+  ========================= */
   const results = [];
 
-  // 🔥 IMPORTANT: filter jobs first (BIG FIX)
-  const relevantJobs = allJobs.filter(j =>
-    (j.title || '').toLowerCase().includes(userCV.toLowerCase().split(' ')[0])
-  ).slice(0, 10);
-
-  for (let job of relevantJobs) {
+  for (let job of filteredJobs) {
     try {
       const res = await fetch(DIJO_API + '/ai/match', {
         method: 'POST',
@@ -67,13 +104,16 @@ async function startMatching() {
         reasons: data.result?.reasons || []
       });
 
-    } catch (e) {}
+    } catch (e) {
+      console.error('Match error', e);
+    }
   }
 
-  // sort
+  /* =========================
+     STEP 4: SORT + TOP 3
+  ========================= */
   results.sort((a, b) => b.score - a.score);
 
-  // 🔥 ONLY SHOW TOP 3 (VERY IMPORTANT)
   renderMatches(results.slice(0, 3));
 }
 
